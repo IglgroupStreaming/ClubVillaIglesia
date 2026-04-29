@@ -37,6 +37,8 @@
                     <p class="text-gray-600 mt-2">Ingresa con tu email y número de socio</p>
                 </div>
                 
+                <div id="statusMsg" class="mb-4 p-3 rounded-lg text-sm hidden"></div>
+                
                 <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                     <p class="text-blue-800 font-semibold text-sm mb-2">
                         <i class="fas fa-flask"></i> Credenciales de prueba:
@@ -46,6 +48,12 @@
                         <div class="font-mono text-blue-700">juan@ejemplo.com</div>
                         <div class="text-gray-700">🆔 N° Socio:</div>
                         <div class="font-mono text-blue-700">1001</div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-sm mt-2">
+                        <div class="text-gray-700">📧 Email 2:</div>
+                        <div class="font-mono text-blue-700">maria@ejemplo.com</div>
+                        <div class="text-gray-700">🆔 N° Socio:</div>
+                        <div class="font-mono text-blue-700">1002</div>
                     </div>
                 </div>
                 
@@ -119,7 +127,9 @@
                     </div>
                     <div class="p-4" id="novedades">
                         <p class="text-gray-600">Bienvenido al sistema de socios del Club Sportivo Iglesia.</p>
-                        <p class="text-gray-600 mt-2">Próximamente más información.</p>
+                        <hr class="my-2">
+                        <p class="text-sm text-gray-500">📢 Próxima reunión: 15 de marzo - 19:00 hs</p>
+                        <p class="text-sm text-gray-500">💳 Cuota mensual: $10.000</p>
                     </div>
                 </div>
             </div>
@@ -127,21 +137,72 @@
     </div>
 
     <script>
+        // ✅ URL CORRECTA DE GOOGLE APPS SCRIPT
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbywqVvCGj6PMKsmqUItytEHSr_tC6nlLnSPMHlLIK1J-2hX2FuW2EpYXdAZgT8xP5JV/exec';
+        
+        // 📦 DATOS DE RESPALDO (modo demostración)
+        const sociosDemo = [
+            { id: "1001", nombre: "Juan Pérez", email: "juan@ejemplo.com", estado: "Activo", telefono: "2645123456", fechaRegistro: "2024-01-15" },
+            { id: "1002", nombre: "María Gómez", email: "maria@ejemplo.com", estado: "Activo", telefono: "2645234567", fechaRegistro: "2024-02-10" },
+            { id: "1003", nombre: "Carlos Rodríguez", email: "carlos@ejemplo.com", estado: "Inactivo", telefono: "2645345678", fechaRegistro: "2023-11-20" }
+        ];
         
         let socioActual = null;
         let sociosData = [];
+        let modoDemo = false;
         
         async function cargarSocios() {
+            mostrarStatus('Conectando con Google Sheets...', 'info');
+            
             try {
-                const response = await fetch(`${SCRIPT_URL}?action=getData&t=${Date.now()}`);
+                // Intentar conectar a Google Sheets
+                const response = await fetch(`${SCRIPT_URL}?action=getData&t=${Date.now()}`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
                 const text = await response.text();
                 const data = JSON.parse(text);
-                if (data.success) {
+                
+                if (data.success && data.data && data.data.length > 0) {
                     sociosData = data.data;
+                    mostrarStatus(`✅ Conectado a Google Sheets - ${sociosData.length} socios`, 'success');
+                    modoDemo = false;
+                } else {
+                    throw new Error('No hay datos en Google Sheets');
                 }
+                
             } catch (error) {
-                console.error('Error:', error);
+                console.warn('Error al conectar con Google Sheets:', error);
+                // Usar modo demostración
+                sociosData = sociosDemo;
+                modoDemo = true;
+                mostrarStatus(`⚠️ Modo demostración activo - Usando datos locales (${sociosData.length} socios de prueba)`, 'warning');
+            }
+        }
+        
+        function mostrarStatus(mensaje, tipo) {
+            const statusDiv = document.getElementById('statusMsg');
+            if (statusDiv) {
+                statusDiv.textContent = mensaje;
+                statusDiv.className = `mb-4 p-3 rounded-lg text-sm ${
+                    tipo === 'error' ? 'bg-red-100 text-red-700' :
+                    tipo === 'warning' ? 'bg-yellow-100 text-yellow-700' :
+                    tipo === 'success' ? 'bg-green-100 text-green-700' :
+                    'bg-blue-100 text-blue-700'
+                }`;
+                statusDiv.classList.remove('hidden');
+                
+                setTimeout(() => {
+                    statusDiv.classList.add('hidden');
+                }, 5000);
             }
         }
         
@@ -150,7 +211,7 @@
             const socioId = document.getElementById('loginSocioId').value.trim();
             
             if (!email || !socioId) {
-                mostrarMensaje('Completa todos los campos', 'error');
+                mostrarStatus('Completa todos los campos', 'error');
                 return;
             }
             
@@ -160,9 +221,9 @@
                 socioActual = socio;
                 localStorage.setItem('socioActual', JSON.stringify(socio));
                 mostrarPanelSocio();
-                mostrarMensaje(`✅ Bienvenido ${socio.nombre}`, 'success');
+                mostrarStatus(`✅ Bienvenido ${socio.nombre}`, 'success');
             } else {
-                mostrarMensaje('❌ Email o número de socio incorrecto', 'error');
+                mostrarStatus('❌ Email o número de socio incorrecto. Probá con: juan@ejemplo.com / 1001', 'error');
             }
         }
         
@@ -199,6 +260,7 @@
                             ${socioActual.estado === 'Activo' ? 'AL DÍA' : 'PENDIENTE'}
                         </span>
                     </div>
+                    ${modoDemo ? '<div class="mt-3 text-xs text-yellow-600 bg-yellow-50 p-2 rounded"><i class="fas fa-info-circle"></i> Modo demostración - Datos locales</div>' : ''}
                 </div>
             `;
         }
@@ -210,17 +272,7 @@
             document.getElementById('panelSection').classList.add('hidden');
             document.getElementById('loginEmail').value = '';
             document.getElementById('loginSocioId').value = '';
-            mostrarMensaje('Sesión cerrada correctamente', 'info');
-        }
-        
-        function mostrarMensaje(mensaje, tipo) {
-            const toast = document.createElement('div');
-            toast.innerHTML = `<i class="fas fa-${tipo === 'error' ? 'exclamation-circle' : tipo === 'info' ? 'info-circle' : 'check-circle'} mr-2"></i>${mensaje}`;
-            toast.className = `fixed bottom-4 right-4 text-white px-6 py-3 rounded-lg shadow-lg z-50 ${
-                tipo === 'error' ? 'bg-red-600' : tipo === 'info' ? 'bg-blue-600' : 'bg-green-600'
-            }`;
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 4000);
+            mostrarStatus('Sesión cerrada correctamente', 'info');
         }
         
         // Inicializar
