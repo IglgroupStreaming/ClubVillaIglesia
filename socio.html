@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Cuenta - Club Sportivo Iglesia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-100">
+    <nav class="bg-blue-800 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-futbol text-2xl"></i>
+                    <span class="font-bold text-xl">Club Sportivo Iglesia</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="userNameDisplay" class="text-sm hidden md:inline"></span>
+                    <button onclick="cerrarSesion()" class="bg-red-600 px-3 py-1 rounded text-sm hover:bg-red-700">
+                        <i class="fas fa-sign-out-alt"></i> Salir
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto p-4 md:p-6">
+        <!-- Login Section -->
+        <div id="loginSection" class="min-h-[80vh] flex items-center justify-center">
+            <div class="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
+                <div class="text-center mb-6">
+                    <div class="bg-blue-800 text-white p-4 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-user-shield text-3xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800">Área de Socios</h2>
+                    <p class="text-gray-600 mt-2">Ingresa con tu email y número de socio</p>
+                </div>
+                
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <p class="text-blue-800 font-semibold text-sm mb-2">
+                        <i class="fas fa-flask"></i> Credenciales de prueba:
+                    </p>
+                    <div class="grid grid-cols-2 gap-2 text-sm">
+                        <div class="text-gray-700">📧 Email:</div>
+                        <div class="font-mono text-blue-700">juan@ejemplo.com</div>
+                        <div class="text-gray-700">🆔 N° Socio:</div>
+                        <div class="font-mono text-blue-700">1001</div>
+                    </div>
+                </div>
+                
+                <form id="loginForm" onsubmit="return false;">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-semibold mb-2">
+                            <i class="fas fa-envelope"></i> Email
+                        </label>
+                        <input type="email" id="loginEmail" required 
+                               class="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-semibold mb-2">
+                            <i class="fas fa-id-card"></i> Número de Socio
+                        </label>
+                        <input type="text" id="loginSocioId" required 
+                               class="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <button onclick="iniciarSesion()" 
+                            class="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 font-semibold">
+                        <i class="fas fa-sign-in-alt"></i> Ingresar
+                    </button>
+                </form>
+                
+                <div class="mt-4 text-center">
+                    <p class="text-sm text-gray-500">Administradores: <a href="admin.html" class="text-blue-600">Acceder al panel</a></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel Principal -->
+        <div id="panelSection" class="hidden">
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+                    <div class="flex items-center space-x-4">
+                        <div class="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center">
+                            <i class="fas fa-user-circle text-4xl text-blue-600"></i>
+                        </div>
+                        <div>
+                            <h2 id="socioNombre" class="text-2xl font-bold text-gray-800"></h2>
+                            <p class="text-gray-600">
+                                <i class="fas fa-id-card"></i> Socio N°: <span id="socioNumero"></span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="mt-4 md:mt-0">
+                        <span id="estadoBoton" class="px-4 py-2 rounded-full text-sm font-semibold"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <!-- Estado de Cuentas -->
+                <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+                    <div class="bg-gradient-to-r from-blue-600 to-blue-700 p-4">
+                        <h3 class="text-white font-bold text-lg">
+                            <i class="fas fa-dollar-sign"></i> Estado de Cuenta
+                        </h3>
+                    </div>
+                    <div class="p-4" id="infoSocio">
+                        <p class="text-gray-600">Cargando información...</p>
+                    </div>
+                </div>
+
+                <!-- Próximos Eventos -->
+                <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+                    <div class="bg-gradient-to-r from-green-600 to-green-700 p-4">
+                        <h3 class="text-white font-bold text-lg">
+                            <i class="fas fa-calendar-alt"></i> Novedades
+                        </h3>
+                    </div>
+                    <div class="p-4" id="novedades">
+                        <p class="text-gray-600">Bienvenido al sistema de socios del Club Sportivo Iglesia.</p>
+                        <p class="text-gray-600 mt-2">Próximamente más información.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbywqVvCGj6PMKsmqUItytEHSr_tC6nlLnSPMHlLIK1J-2hX2FuW2EpYXdAZgT8xP5JV/exec';
+        
+        let socioActual = null;
+        let sociosData = [];
+        
+        async function cargarSocios() {
+            try {
+                const response = await fetch(`${SCRIPT_URL}?action=getData&t=${Date.now()}`);
+                const text = await response.text();
+                const data = JSON.parse(text);
+                if (data.success) {
+                    sociosData = data.data;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+        
+        function iniciarSesion() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const socioId = document.getElementById('loginSocioId').value.trim();
+            
+            if (!email || !socioId) {
+                mostrarMensaje('Completa todos los campos', 'error');
+                return;
+            }
+            
+            const socio = sociosData.find(s => s.email === email && s.id === socioId);
+            
+            if (socio) {
+                socioActual = socio;
+                localStorage.setItem('socioActual', JSON.stringify(socio));
+                mostrarPanelSocio();
+                mostrarMensaje(`✅ Bienvenido ${socio.nombre}`, 'success');
+            } else {
+                mostrarMensaje('❌ Email o número de socio incorrecto', 'error');
+            }
+        }
+        
+        function mostrarPanelSocio() {
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('panelSection').classList.remove('hidden');
+            
+            document.getElementById('socioNombre').textContent = socioActual.nombre;
+            document.getElementById('socioNumero').textContent = socioActual.id;
+            document.getElementById('userNameDisplay').textContent = `Bienvenido, ${socioActual.nombre.split(' ')[0]}`;
+            
+            const estadoColor = socioActual.estado === 'Activo' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
+            const estadoTexto = socioActual.estado === 'Activo' ? '✅ Cuota al día' : '⚠️ Cuota pendiente';
+            document.getElementById('estadoBoton').innerHTML = estadoTexto;
+            document.getElementById('estadoBoton').className = `px-4 py-2 rounded-full text-sm font-semibold ${estadoColor}`;
+            
+            document.getElementById('infoSocio').innerHTML = `
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <span class="text-gray-600">📧 Email:</span>
+                        <span class="font-medium">${socioActual.email}</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <span class="text-gray-600">📱 Teléfono:</span>
+                        <span class="font-medium">${socioActual.telefono || 'No registrado'}</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <span class="text-gray-600">📅 Socio desde:</span>
+                        <span class="font-medium">${socioActual.fechaRegistro || 'Fecha no disponible'}</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-2">
+                        <span class="text-gray-600">💰 Estado de cuenta:</span>
+                        <span class="font-bold ${socioActual.estado === 'Activo' ? 'text-green-600' : 'text-red-600'}">
+                            ${socioActual.estado === 'Activo' ? 'AL DÍA' : 'PENDIENTE'}
+                        </span>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function cerrarSesion() {
+            localStorage.removeItem('socioActual');
+            socioActual = null;
+            document.getElementById('loginSection').classList.remove('hidden');
+            document.getElementById('panelSection').classList.add('hidden');
+            document.getElementById('loginEmail').value = '';
+            document.getElementById('loginSocioId').value = '';
+            mostrarMensaje('Sesión cerrada correctamente', 'info');
+        }
+        
+        function mostrarMensaje(mensaje, tipo) {
+            const toast = document.createElement('div');
+            toast.innerHTML = `<i class="fas fa-${tipo === 'error' ? 'exclamation-circle' : tipo === 'info' ? 'info-circle' : 'check-circle'} mr-2"></i>${mensaje}`;
+            toast.className = `fixed bottom-4 right-4 text-white px-6 py-3 rounded-lg shadow-lg z-50 ${
+                tipo === 'error' ? 'bg-red-600' : tipo === 'info' ? 'bg-blue-600' : 'bg-green-600'
+            }`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+        
+        // Inicializar
+        cargarSocios().then(() => {
+            const sesionGuardada = localStorage.getItem('socioActual');
+            if (sesionGuardada) {
+                socioActual = JSON.parse(sesionGuardada);
+                const existe = sociosData.some(s => s.email === socioActual.email && s.id === socioActual.id);
+                if (existe) {
+                    mostrarPanelSocio();
+                } else {
+                    localStorage.removeItem('socioActual');
+                }
+            }
+        });
+    </script>
+</body>
+</html>

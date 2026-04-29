@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administración - Club Sportivo Iglesia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-100">
+    <nav class="bg-blue-800 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-shield-alt text-2xl"></i>
+                    <span class="font-bold text-xl">Panel de Administración</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="adminUser" class="text-sm">👑 Admin</span>
+                    <button onclick="cerrarSesion()" class="bg-red-600 px-3 py-1 rounded text-sm hover:bg-red-700">
+                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto p-6">
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h1 class="text-3xl font-bold text-blue-800">⚽ Club Sportivo Iglesia</h1>
+            <p class="text-gray-600">Sistema de Gestión de Socios - Conectado a Google Sheets</p>
+            <p class="text-sm text-green-600 mt-1">✅ Base de datos conectada correctamente</p>
+        </div>
+
+        <!-- Estadísticas -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-lg shadow p-4 border-l-4 border-blue-600">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-gray-500 text-sm">Total Socios</p>
+                        <p class="text-2xl font-bold" id="totalSocios">0</p>
+                    </div>
+                    <i class="fas fa-users text-3xl text-blue-600"></i>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4 border-l-4 border-green-600">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-gray-500 text-sm">Activos</p>
+                        <p class="text-2xl font-bold text-green-600" id="activos">0</p>
+                    </div>
+                    <i class="fas fa-check-circle text-3xl text-green-600"></i>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4 border-l-4 border-yellow-600">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-gray-500 text-sm">Suspendidos</p>
+                        <p class="text-2xl font-bold text-yellow-600" id="suspendidos">0</p>
+                    </div>
+                    <i class="fas fa-pause-circle text-3xl text-yellow-600"></i>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4 border-l-4 border-red-600">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-gray-500 text-sm">Inactivos</p>
+                        <p class="text-2xl font-bold text-red-600" id="inactivos">0</p>
+                    </div>
+                    <i class="fas fa-times-circle text-3xl text-red-600"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulario de Administración -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-user-plus text-blue-600"></i> Agregar Socio Manualmente
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <input type="text" id="nombre" placeholder="Nombre completo" class="border p-2 rounded focus:ring-2 focus:ring-blue-500">
+                <input type="email" id="email" placeholder="Email" class="border p-2 rounded focus:ring-2 focus:ring-blue-500">
+                <input type="text" id="telefono" placeholder="Teléfono" class="border p-2 rounded focus:ring-2 focus:ring-blue-500">
+                <select id="estado" class="border p-2 rounded focus:ring-2 focus:ring-blue-500">
+                    <option value="Activo">Activo</option>
+                    <option value="Suspendido">Suspendido</option>
+                    <option value="Inactivo">Inactivo</option>
+                </select>
+            </div>
+            <div class="mt-4">
+                <button onclick="agregarSocio()" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+                    <i class="fas fa-save"></i> Registrar Socio
+                </button>
+                <button onclick="exportarCSV()" class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 ml-2">
+                    <i class="fas fa-download"></i> Exportar CSV
+                </button>
+                <button onclick="cargarSocios()" class="bg-gray-600 text-white px-6 py-2 rounded hover:bg-gray-700 ml-2">
+                    <i class="fas fa-sync-alt"></i> Actualizar
+                </button>
+            </div>
+        </div>
+
+        <!-- Tabla de Socios -->
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+            <div class="p-4 border-b bg-gray-50">
+                <h2 class="text-xl font-bold text-gray-800">
+                    <i class="fas fa-list"></i> Lista de Socios Registrados
+                </h2>
+            </div>
+            <div id="loadingMsg" class="text-center py-8 hidden">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                <p class="mt-2">Cargando datos...</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-200">
+                        <tr>
+                            <th class="p-3 text-left">ID</th>
+                            <th class="p-3 text-left">Nombre</th>
+                            <th class="p-3 text-left">Email</th>
+                            <th class="p-3 text-left">Teléfono</th>
+                            <th class="p-3 text-left">Fecha Registro</th>
+                            <th class="p-3 text-left">Estado</th>
+                            <th class="p-3 text-left">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listaSocios"></tbody>
+                <td>
+                <div id="emptyMsg" class="text-center text-gray-500 py-8 hidden">
+                    <i class="fas fa-inbox text-4xl mb-2"></i>
+                    <p>No hay socios registrados</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ✅ TU URL CORRECTA DE GOOGLE APPS SCRIPT
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbywqVvCGj6PMKsmqUItytEHSr_tC6nlLnSPMHlLIK1J-2hX2FuW2EpYXdAZgT8xP5JV/exec';
+        
+        let socios = [];
+        
+        function verificarAdmin() {
+            const auth = localStorage.getItem('adminAuth');
+            if (!auth) {
+                const password = prompt('🔐 Acceso restringido - Ingrese la contraseña de administrador:');
+                if (password === 'admin123') {
+                    localStorage.setItem('adminAuth', 'true');
+                } else {
+                    alert('Contraseña incorrecta');
+                    window.location.href = 'socio.html';
+                }
+            }
+        }
+        
+        function cerrarSesion() {
+            localStorage.removeItem('adminAuth');
+            window.location.reload();
+        }
+        
+        async function cargarSocios() {
+            mostrarLoading(true);
+            try {
+                const response = await fetch(`${SCRIPT_URL}?action=getData&t=${Date.now()}`);
+                const text = await response.text();
+                const data = JSON.parse(text);
+                
+                if (data.success && data.data) {
+                    socios = data.data;
+                    renderizar();
+                    actualizarEstadisticas();
+                } else {
+                    throw new Error('Error al cargar datos');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                mostrarMensaje('Error al conectar con la base de datos', 'error');
+            } finally {
+                mostrarLoading(false);
+            }
+        }
+        
+        async function agregarSocio() {
+            const nombre = document.getElementById('nombre').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const telefono = document.getElementById('telefono').value.trim();
+            const estado = document.getElementById('estado').value;
+            
+            if (!nombre || !email) {
+                mostrarMensaje('Nombre y email son obligatorios', 'error');
+                return;
+            }
+            
+            if (!validarEmail(email)) {
+                mostrarMensaje('Email inválido', 'error');
+                return;
+            }
+            
+            mostrarLoading(true);
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: new URLSearchParams({
+                        action: 'addData',
+                        nombre: nombre,
+                        email: email,
+                        telefono: telefono,
+                        estado: estado
+                    })
+                });
+                
+                document.getElementById('nombre').value = '';
+                document.getElementById('email').value = '';
+                document.getElementById('telefono').value = '';
+                
+                mostrarMensaje('✅ Socio agregado exitosamente', 'success');
+                setTimeout(() => cargarSocios(), 1000);
+                
+            } catch (error) {
+                mostrarMensaje('Error al agregar socio', 'error');
+            } finally {
+                mostrarLoading(false);
+            }
+        }
+        
+        async function eliminarSocio(index) {
+            const socio = socios[index];
+            if (!confirm(`¿Eliminar permanentemente a ${socio.nombre}?`)) return;
+            
+            mostrarLoading(true);
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: new URLSearchParams({
+                        action: 'deleteData',
+                        rowIndex: socio.rowIndex
+                    })
+                });
+                
+                mostrarMensaje('Socio eliminado', 'success');
+                cargarSocios();
+                
+            } catch (error) {
+                mostrarMensaje('Error al eliminar', 'error');
+            } finally {
+                mostrarLoading(false);
+            }
+        }
+        
+        async function updateEstado(index, nuevoEstado) {
+            const socio = socios[index];
+            mostrarLoading(true);
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: new URLSearchParams({
+                        action: 'updateData',
+                        rowIndex: socio.rowIndex,
+                        estado: nuevoEstado
+                    })
+                });
+                
+                mostrarMensaje('Estado actualizado', 'success');
+                cargarSocios();
+                
+            } catch (error) {
+                mostrarMensaje('Error al actualizar', 'error');
+            } finally {
+                mostrarLoading(false);
+            }
+        }
+        
+        function actualizarEstadisticas() {
+            const total = socios.length;
+            const activos = socios.filter(s => s.estado === 'Activo').length;
+            const suspendidos = socios.filter(s => s.estado === 'Suspendido').length;
+            const inactivos = socios.filter(s => s.estado === 'Inactivo').length;
+            
+            document.getElementById('totalSocios').textContent = total;
+            document.getElementById('activos').textContent = activos;
+            document.getElementById('suspendidos').textContent = suspendidos;
+            document.getElementById('inactivos').textContent = inactivos;
+        }
+        
+        function renderizar() {
+            const lista = document.getElementById('listaSocios');
+            const emptyMsg = document.getElementById('emptyMsg');
+            
+            if (socios.length === 0) {
+                lista.innerHTML = '';
+                if (emptyMsg) emptyMsg.classList.remove('hidden');
+                return;
+            }
+            
+            if (emptyMsg) emptyMsg.classList.add('hidden');
+            
+            lista.innerHTML = '';
+            socios.forEach((socio, index) => {
+                const estadoColor = socio.estado === 'Activo' ? 'text-green-600' : 
+                                   socio.estado === 'Suspendido' ? 'text-yellow-600' : 'text-red-600';
+                
+                lista.innerHTML += `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-3">${socio.id || index + 1}</td>
+                        <td class="p-3 font-medium">${escapeHtml(socio.nombre)}</td>
+                        <td class="p-3">${escapeHtml(socio.email)}</td>
+                        <td class="p-3">${escapeHtml(socio.telefono || '-')}</td>
+                        <td class="p-3">${socio.fechaRegistro || '-'}</td>
+                        <td class="p-3">
+                            <select onchange="updateEstado(${index}, this.value)" class="${estadoColor} border rounded px-2 py-1 text-sm">
+                                <option value="Activo" ${socio.estado === 'Activo' ? 'selected' : ''}>✅ Activo</option>
+                                <option value="Suspendido" ${socio.estado === 'Suspendido' ? 'selected' : ''}>⏸ Suspendido</option>
+                                <option value="Inactivo" ${socio.estado === 'Inactivo' ? 'selected' : ''}>❌ Inactivo</option>
+                            </select>
+                        </td>
+                        <td class="p-3">
+                            <button onclick="eliminarSocio(${index})" class="text-red-600 hover:text-red-800">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        
+        function exportarCSV() {
+            if (socios.length === 0) {
+                mostrarMensaje('No hay datos para exportar', 'error');
+                return;
+            }
+            
+            let csvContent = "ID,Nombre,Email,Teléfono,Fecha Registro,Estado\n";
+            socios.forEach(socio => {
+                csvContent += `"${socio.id || ''}","${socio.nombre}","${socio.email}","${socio.telefono || ''}","${socio.fechaRegistro || ''}","${socio.estado}"\n`;
+            });
+            
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `socios_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+        }
+        
+        function validarEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+        
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                return m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;';
+            });
+        }
+        
+        function mostrarLoading(show) {
+            const loading = document.getElementById('loadingMsg');
+            if (loading) {
+                show ? loading.classList.remove('hidden') : loading.classList.add('hidden');
+            }
+        }
+        
+        function mostrarMensaje(mensaje, tipo) {
+            const toast = document.createElement('div');
+            toast.innerHTML = `<i class="fas fa-${tipo === 'error' ? 'exclamation-circle' : 'check-circle'} mr-2"></i>${mensaje}`;
+            toast.className = `fixed bottom-4 right-4 text-white px-6 py-3 rounded-lg shadow-lg z-50 ${
+                tipo === 'error' ? 'bg-red-600' : 'bg-green-600'
+            }`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+        
+        verificarAdmin();
+        cargarSocios();
+    </script>
+</body>
+</html>
