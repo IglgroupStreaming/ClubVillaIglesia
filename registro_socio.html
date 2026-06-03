@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Socios - Club Sportivo Iglesia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-gray-100 min-h-screen">
+    <div class="max-w-2xl mx-auto p-6">
+        <div class="bg-white rounded-2xl shadow-xl p-8">
+            <div class="text-center mb-6">
+                <div class="bg-blue-800 text-white p-4 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-user-plus text-3xl"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-800">Registro de Nuevo Socio</h1>
+                <p class="text-gray-600">Completá el formulario para unirte al club</p>
+            </div>
+
+            <div id="mensaje" class="mb-4 p-3 rounded-lg text-sm hidden"></div>
+
+            <form id="registroForm" onsubmit="return false;">
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-semibold mb-2">Nombre completo *</label>
+                    <input type="text" id="nombre" required class="w-full border border-gray-300 p-3 rounded-lg">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-semibold mb-2">Email *</label>
+                    <input type="email" id="email" required class="w-full border border-gray-300 p-3 rounded-lg">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-semibold mb-2">Teléfono</label>
+                    <input type="text" id="telefono" class="w-full border border-gray-300 p-3 rounded-lg">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-semibold mb-2">Dirección</label>
+                    <input type="text" id="direccion" class="w-full border border-gray-300 p-3 rounded-lg">
+                </div>
+                <div class="mb-6">
+                    <label class="flex items-center">
+                        <input type="checkbox" id="terminos" class="mr-2">
+                        <span class="text-sm text-gray-600">Acepto los términos y condiciones del club</span>
+                    </label>
+                </div>
+                <button type="button" onclick="registrarSocio()" class="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700">
+                    <i class="fas fa-check-circle"></i> Registrarme
+                </button>
+            </form>
+
+            <div class="mt-6 text-center">
+                <a href="socio.html" class="text-blue-600 hover:underline">← ¿Ya tenés cuenta? Ingresá aquí</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuración de Google Sheets
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbywqVvCGj6PMKsmqUItytEHSr_tC6nlLnSPMHlLIK1J-2hX2FuW2EpYXdAZgT8xP5JV/exec';
+        
+        // Socios registrados localmente (para respaldo)
+        let sociosRegistrados = JSON.parse(localStorage.getItem('sociosRegistrados')) || [];
+
+        function mostrarMensaje(texto, tipo) {
+            const msg = document.getElementById('mensaje');
+            msg.textContent = texto;
+            msg.className = `mb-4 p-3 rounded-lg text-sm ${tipo === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`;
+            msg.classList.remove('hidden');
+            setTimeout(() => msg.classList.add('hidden'), 4000);
+        }
+
+        async function registrarSocio() {
+            const nombre = document.getElementById('nombre').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const telefono = document.getElementById('telefono').value.trim();
+            const direccion = document.getElementById('direccion').value.trim();
+            const terminos = document.getElementById('terminos').checked;
+
+            if (!nombre || !email) {
+                mostrarMensaje('❌ Nombre y email son obligatorios', 'error');
+                return;
+            }
+
+            if (!terminos) {
+                mostrarMensaje('❌ Debes aceptar los términos y condiciones', 'error');
+                return;
+            }
+
+            // Verificar si el email ya existe
+            if (sociosRegistrados.some(s => s.email === email)) {
+                mostrarMensaje('❌ Este email ya está registrado. Usá "Olvidé mi número" o contactá al club.', 'error');
+                return;
+            }
+
+            mostrarMensaje('📝 Registrando...', 'info');
+
+            // Generar número de socio automático
+            const nuevoId = (sociosRegistrados.length + 1001).toString();
+
+            const nuevoSocio = {
+                id: nuevoId,
+                nombre: nombre,
+                email: email,
+                telefono: telefono,
+                direccion: direccion,
+                estado: "Activo",
+                fechaRegistro: new Date().toISOString().split('T')[0]
+            };
+
+            // Guardar localmente
+            sociosRegistrados.push(nuevoSocio);
+            localStorage.setItem('sociosRegistrados', JSON.stringify(sociosRegistrados));
+
+            // Intentar guardar en Google Sheets
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: new URLSearchParams({
+                        action: 'addData',
+                        nombre: nombre,
+                        email: email,
+                        telefono: telefono,
+                        estado: 'Activo'
+                    })
+                });
+                console.log('Datos enviados a Google Sheets');
+            } catch(e) {
+                console.log('No se pudo conectar a Google Sheets, datos guardados localmente');
+            }
+
+            // Mostrar éxito con el número de socio
+            document.getElementById('registroForm').innerHTML = `
+                <div class="text-center py-6">
+                    <i class="fas fa-check-circle text-green-600 text-5xl mb-4"></i>
+                    <h3 class="text-xl font-bold text-gray-800">¡Registro exitoso!</h3>
+                    <p class="text-gray-600 mt-2">Tu número de socio es:</p>
+                    <p class="text-3xl font-bold text-blue-600 my-2">${nuevoId}</p>
+                    <p class="text-sm text-gray-500">Usá este número y tu email para ingresar al sistema.</p>
+                    <a href="socio.html" class="inline-block mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+                        Ir al inicio de sesión →
+                    </a>
+                </div>
+            `;
+        }
+
+        // Cargar socios existentes desde localStorage
+        if (localStorage.getItem('sociosRegistrados')) {
+            sociosRegistrados = JSON.parse(localStorage.getItem('sociosRegistrados'));
+        }
+    </script>
+</body>
+</html>
