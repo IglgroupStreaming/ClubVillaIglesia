@@ -18,16 +18,21 @@
                 <i class="fas fa-shield-alt text-2xl"></i>
                 <span class="font-bold text-xl">Panel de Administración</span>
             </div>
-            <button onclick="cerrarSesion()" class="bg-red-600 px-3 py-1 rounded text-sm">
-                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
-            </button>
+            <div>
+                <button onclick="vaciarBaseDatos()" class="bg-red-600 px-3 py-1 rounded text-sm mr-2">
+                    <i class="fas fa-trash-alt"></i> Vaciar DB
+                </button>
+                <button onclick="cerrarSesion()" class="bg-gray-600 px-3 py-1 rounded text-sm">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </button>
+            </div>
         </div>
     </nav>
 
     <div class="max-w-7xl mx-auto p-6">
         <!-- Estado de conexión -->
         <div class="bg-white rounded-lg shadow-lg p-4 mb-6 flex justify-between items-center">
-            <p>⚽ Club Sportivo Iglesia - <span id="statusSheet" class="text-yellow-600">🔄 Verificando conexión...</span></p>
+            <p>⚽ Club Sportivo Iglesia - <span id="statusSheet" class="text-yellow-600">🔄 Verificando...</span></p>
             <button onclick="probarConexion()" class="bg-blue-600 text-white px-3 py-1 rounded text-sm">
                 <i class="fas fa-plug"></i> Probar conexión
             </button>
@@ -105,32 +110,56 @@
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbywqVvCGj6PMKsmqUItytEHSr_tC6nlLnSPMHlLIK1J-2hX2FuW2EpYXdAZgT8xP5JV/exec';
         let socios = [];
         
-        // Pagos en localStorage
         let pagosSocios = JSON.parse(localStorage.getItem('pagosSocios')) || {};
         function guardarPagos() { localStorage.setItem('pagosSocios', JSON.stringify(pagosSocios)); }
         
-        // Verificar conexión a Google Sheets
+        // ========== VACIAR BASE DE DATOS ==========
+        async function vaciarBaseDatos() {
+            if(!confirm('⚠️ ¿ESTÁS SEGURO? Esta acción eliminará TODOS los socios registrados.\n\nNo se puede deshacer.')) return;
+            
+            if(!confirm('✅ ÚLTIMA ADVERTENCIA: Se borrarán TODOS los datos de socios, pagos, novedades y eventos.\n¿Continuar?')) return;
+            
+            try {
+                // Intentar vaciar Google Sheets
+                const response = await fetch(`${SCRIPT_URL}?action=clearAll`);
+                console.log('Google Sheets vaciado');
+            } catch(e) { console.log('Error al vaciar Sheets:', e); }
+            
+            // Vaciar localStorage
+            localStorage.removeItem('sociosRegistrados');
+            localStorage.removeItem('pagosSocios');
+            localStorage.removeItem('novedadesAdmin');
+            localStorage.removeItem('eventosAdmin');
+            
+            // Reiniciar arrays locales
+            socios = [];
+            pagosSocios = {};
+            novedades = [{ id: 1, titulo: "📰 Bienvenidos", contenido: "Bienvenidos al nuevo sistema de socios", fecha: new Date().toISOString().split('T')[0] }];
+            eventos = [{ id: 1, titulo: "Asamblea General", fecha: "2024-03-15", hora: "19:00", lugar: "Sede del Club" }];
+            
+            guardarNovedades();
+            guardarEventos();
+            
+            alert('✅ Base de datos vaciada correctamente.\nLos nuevos socios comenzarán desde el número 1001.');
+            location.reload();
+        }
+        
+        // Verificar conexión
         async function probarConexion() {
             const statusSpan = document.getElementById('statusSheet');
-            statusSpan.innerHTML = '🔄 Probando conexión...';
-            statusSpan.className = 'text-yellow-600';
-            
+            statusSpan.innerHTML = '🔄 Probando...';
             try {
                 const response = await fetch(`${SCRIPT_URL}?action=getData&t=${Date.now()}`);
                 const text = await response.text();
                 const data = JSON.parse(text);
-                
                 if (data.success) {
                     statusSpan.innerHTML = '✅ Conectado a Google Sheets';
                     statusSpan.className = 'text-green-600';
                     cargarSocios();
-                } else {
-                    throw new Error('Error en respuesta');
-                }
+                } else { throw new Error('Error'); }
             } catch(error) {
-                statusSpan.innerHTML = '❌ Error de conexión - Verificar Apps Script';
+                statusSpan.innerHTML = '❌ Error de conexión';
                 statusSpan.className = 'text-red-600';
-                console.error('Error:', error);
             }
         }
         
@@ -148,10 +177,10 @@
         function actualizarListaNovedades() {
             const container = document.getElementById('listaNovedadesAdmin');
             if(!container) return;
-            if(novedades.length === 0) { container.innerHTML = '<p class="text-gray-500 text-sm">No hay novedades</p>'; return; }
+            if(novedades.length === 0) { container.innerHTML = '<p class="text-gray-500">No hay novedades</p>'; return; }
             let html = '';
             novedades.forEach((n, i) => {
-                html += `<div class="border-b pb-2 mb-2"><p class="font-semibold text-sm">${n.titulo}</p><p class="text-xs text-gray-600">${n.contenido.substring(0, 60)}...</p><button onclick="editarNovedad(${i})" class="text-blue-600 text-xs mr-2">✏️ Editar</button><button onclick="eliminarNovedad(${i})" class="text-red-600 text-xs">🗑️ Eliminar</button></div>`;
+                html += `<div class="border-b pb-2 mb-2"><p class="font-semibold text-sm">${n.titulo}</p><p class="text-xs text-gray-600">${n.contenido.substring(0, 60)}...</p><button onclick="editarNovedad(${i})" class="text-blue-600 text-xs mr-2">✏️</button><button onclick="eliminarNovedad(${i})" class="text-red-600 text-xs">🗑️</button></div>`;
             });
             container.innerHTML = html;
         }
@@ -159,10 +188,10 @@
         function actualizarListaEventos() {
             const container = document.getElementById('listaEventosAdmin');
             if(!container) return;
-            if(eventos.length === 0) { container.innerHTML = '<p class="text-gray-500 text-sm">No hay eventos</p>'; return; }
+            if(eventos.length === 0) { container.innerHTML = '<p class="text-gray-500">No hay eventos</p>'; return; }
             let html = '';
             eventos.forEach((e, i) => {
-                html += `<div class="border-b pb-2 mb-2"><p class="font-semibold text-sm">📅 ${e.titulo}</p><p class="text-xs text-gray-600">${e.fecha} - ${e.hora} | ${e.lugar}</p><button onclick="editarEvento(${i})" class="text-blue-600 text-xs mr-2">✏️ Editar</button><button onclick="eliminarEvento(${i})" class="text-red-600 text-xs">🗑️ Eliminar</button></div>`;
+                html += `<div class="border-b pb-2 mb-2"><p class="font-semibold text-sm">📅 ${e.titulo}</p><p class="text-xs text-gray-600">${e.fecha} - ${e.hora} | ${e.lugar}</p><button onclick="editarEvento(${i})" class="text-blue-600 text-xs mr-2">✏️</button><button onclick="eliminarEvento(${i})" class="text-red-600 text-xs">🗑️</button></div>`;
             });
             container.innerHTML = html;
         }
@@ -192,10 +221,8 @@
                 const text = await response.text();
                 const data = JSON.parse(text);
                 if (data.success && data.data && data.data.length > 0) { socios = data.data; }
-                else { throw new Error('Sin datos'); }
-            } catch(error) {
-                socios = [];
-            }
+                else { socios = []; }
+            } catch(error) { socios = []; }
             actualizarTablaSocios();
             actualizarSelectSocios();
         }
