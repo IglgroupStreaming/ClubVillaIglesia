@@ -41,12 +41,19 @@
                 
                 <div id="statusMsg" class="mb-4 p-3 rounded-lg text-sm hidden"></div>
                 
-                <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-                    <p class="text-green-800 font-semibold text-sm mb-2">
-                        <i class="fas fa-check-circle"></i> Socios registrados:
+                <!-- SOLO EJEMPLO VISUAL - NO PERMITE INGRESAR -->
+                <div class="bg-gray-100 border border-gray-300 rounded-lg p-4 mb-6">
+                    <p class="text-gray-600 font-semibold text-sm mb-2">
+                        <i class="fas fa-info-circle"></i> Ejemplo (solo para mostrar):
                     </p>
-                    <div class="space-y-2 text-sm" id="listaSociosDemo"></div>
-                    <button onclick="recargarSocios()" class="mt-2 w-full bg-blue-600 text-white py-1 rounded text-xs">Recargar lista</button>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700">📧 ejemplo@club.com</span>
+                            <span class="font-mono text-gray-500">N°: 9999</span>
+                            <span class="text-gray-400 text-xs">(No permite ingreso)</span>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-2">⚠️ Solo pueden ingresar los socios registrados</p>
                 </div>
                 
                 <form onsubmit="return false;">
@@ -73,7 +80,7 @@
             </div>
         </div>
 
-        <!-- Panel Principal del Socio -->
+        <!-- Panel Principal del Socio (oculto hasta login exitoso) -->
         <div id="panelSection" class="hidden">
             <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
@@ -103,7 +110,7 @@
                 </div>
                 <div class="bg-white rounded-lg shadow-lg overflow-hidden">
                     <div class="bg-gradient-to-r from-yellow-600 to-orange-600 p-4">
-                        <h3 class="text-white font-bold"><i class="fas fa-bell"></i> Próximos Vencimientos</h3>
+                        <h3 class="text-white font-bold"><i class="fas fa-bell"></i> Próximo Vencimiento</h3>
                     </div>
                     <div class="p-4" id="proximosVencimientos"></div>
                 </div>
@@ -168,6 +175,7 @@
         // Cargar novedades y eventos desde localStorage (admin)
         function cargarNovedades() { return JSON.parse(localStorage.getItem('novedadesAdmin')) || []; }
         function cargarEventos() { return JSON.parse(localStorage.getItem('eventosAdmin')) || []; }
+        function cargarPagos() { return JSON.parse(localStorage.getItem('pagosSocios')) || {}; }
         
         function mostrarNovedades() {
             const container = document.getElementById('novedadesContainer');
@@ -196,34 +204,9 @@
         }
         
         function cargarSociosRegistrados() {
-            const locales = JSON.parse(localStorage.getItem('sociosRegistrados')) || [];
-            const sociosDemo = [
-                { id: "1001", nombre: "Juan Pérez", email: "juan@ejemplo.com", estado: "Activo" },
-                { id: "1002", nombre: "María Gómez", email: "maria@ejemplo.com", estado: "Activo" }
-            ];
-            todosLosSocios = [...sociosDemo, ...locales];
-            const unique = [];
-            const emails = new Set();
-            for (const socio of todosLosSocios) {
-                if (!emails.has(socio.email)) { emails.add(socio.email); unique.push(socio); }
-            }
-            todosLosSocios = unique;
-            mostrarListaSocios();
+            // Solo cargar los socios REALMENTE registrados (desde localStorage)
+            todosLosSocios = JSON.parse(localStorage.getItem('sociosRegistrados')) || [];
         }
-        
-        function mostrarListaSocios() {
-            const container = document.getElementById('listaSociosDemo');
-            if(!container) return;
-            if(todosLosSocios.length === 0) { container.innerHTML = '<p class="text-gray-500 text-xs">No hay socios registrados aún.</p>'; return; }
-            let html = '';
-            todosLosSocios.forEach(s => {
-                html += `<div class="flex justify-between items-center border-b pb-1"><span><strong>${s.nombre}</strong><br><span class="text-xs">${s.email}</span></span><span class="text-blue-600 font-mono text-sm">N° ${s.id}</span><button onclick="cargarCredencial('${s.email}', '${s.id}')" class="bg-green-600 text-white px-2 py-0.5 rounded text-xs">Usar</button></div>`;
-            });
-            container.innerHTML = html;
-        }
-        
-        function cargarCredencial(email, id) { document.getElementById('loginEmail').value = email; document.getElementById('loginSocioId').value = id; iniciarSesion(); }
-        function recargarSocios() { cargarSociosRegistrados(); mostrarMensaje('Lista actualizada', 'success'); }
         
         function mostrarMensaje(texto, tipo) {
             const msg = document.getElementById('statusMsg');
@@ -237,8 +220,12 @@
         function iniciarSesion() {
             const email = document.getElementById('loginEmail').value.trim().toLowerCase();
             const socioId = document.getElementById('loginSocioId').value.trim();
+            
             if (!email || !socioId) { mostrarMensaje('❌ Completa ambos campos', 'error'); return; }
+            
+            // Verificar que sea un usuario REALMENTE registrado
             const socio = todosLosSocios.find(s => s.email === email && s.id === socioId);
+            
             if (socio) {
                 socioActual = socio;
                 document.getElementById('loginSection').classList.add('hidden');
@@ -247,19 +234,56 @@
                 document.getElementById('socioNumero').innerHTML = socio.id;
                 document.getElementById('estadoBoton').innerHTML = '✅ Al día';
                 document.getElementById('estadoBoton').className = 'px-4 py-2 rounded-full text-sm font-semibold bg-green-100 text-green-700';
-                cargarDatosBasicos();
+                cargarDatosSocio();
                 mostrarNovedades();
                 mostrarEventos();
             } else {
-                mostrarMensaje('❌ Credenciales incorrectas.', 'error');
+                mostrarMensaje('❌ Credenciales incorrectas. Solo socios registrados pueden ingresar.', 'error');
             }
         }
         
-        function cargarDatosBasicos() {
-            document.getElementById('estadoCuenta').innerHTML = `<div class="space-y-2"><div class="flex justify-between border-b py-2"><span>Enero 2024</span><span>$10.000</span><span class="text-green-600">Pagada</span></div><div class="flex justify-between border-b py-2"><span>Febrero 2024</span><span>$10.000</span><span class="text-green-600">Pagada</span></div><div class="flex justify-between border-b py-2"><span>Marzo 2024</span><span>$10.000</span><span class="text-yellow-600">Pendiente</span></div><div class="flex justify-between pt-2 font-bold border-t"><span>Total adeudado:</span><span class="text-red-600">$10.000</span></div></div>`;
-            document.getElementById('proximosVencimientos').innerHTML = `<div class="bg-yellow-50 p-3 rounded-lg"><p class="font-semibold">📅 Marzo 2024</p><p>Vence: 10/03/2024</p><p class="text-red-600">⚠️ Faltan 7 días</p></div>`;
-            document.getElementById('periodoPago').innerHTML = `<option value="">Seleccionar</option><option value="Marzo 2024">Marzo 2024 - $10.000</option><option value="Abril 2024">Abril 2024 - $10.000</option>`;
-            // Historial vacío (ya está por defecto en el HTML)
+        function cargarDatosSocio() {
+            const pagos = cargarPagos();
+            const ultimoPago = pagos[socioActual.id]?.ultimoPago || null;
+            
+            // Calcular próximo vencimiento (cada 31 días)
+            let proximoVencimiento = 'Pendiente primer pago';
+            if (ultimoPago) {
+                const fecha = new Date(ultimoPago);
+                fecha.setDate(fecha.getDate() + 31);
+                proximoVencimiento = fecha.toISOString().split('T')[0];
+            }
+            
+            document.getElementById('estadoCuenta').innerHTML = `
+                <div class="space-y-2">
+                    <div class="flex justify-between border-b py-2"><span>Cuota mensual</span><span>$10.000</span></div>
+                    <div class="flex justify-between border-b py-2"><span>Último pago</span><span>${ultimoPago || 'Sin pagos'}</span></div>
+                    <div class="flex justify-between pt-2 font-bold border-t"><span>Próximo vencimiento:</span><span class="text-yellow-600">${proximoVencimiento}</span></div>
+                </div>
+            `;
+            
+            document.getElementById('proximosVencimientos').innerHTML = `
+                <div class="bg-yellow-50 p-3 rounded-lg">
+                    <p class="font-semibold">📅 Próximo pago</p>
+                    <p>Vence: ${proximoVencimiento}</p>
+                    <p class="text-sm text-gray-600">Monto: $10.000</p>
+                </div>
+            `;
+            
+            // Cargar historial de pagos del socio
+            const historial = pagos[socioActual.id]?.historial || [];
+            const tbody = document.getElementById('historialPagos');
+            if (historial.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4 text-gray-500">No hay pagos registrados aún</td></tr>';
+            } else {
+                let html = '';
+                historial.forEach(p => {
+                    html += `<tr class="border-b"><td class="p-2">${p.fecha}</td><td>${p.fecha.substring(0,7)}</td><td>$${p.monto}</td><td class="text-green-600">Aprobado</td><td><button onclick="alert('Comprobante')" class="text-blue-600">Ver</button></td></tr>`;
+                });
+                tbody.innerHTML = html;
+            }
+            
+            document.getElementById('periodoPago').innerHTML = `<option value="">Seleccionar</option><option value="${proximoVencimiento}">${proximoVencimiento} - $10.000</option>`;
         }
         
         function subirComprobante() {
@@ -268,7 +292,7 @@
             const result = document.getElementById('uploadResult');
             if (!periodo) { result.innerHTML = '<span class="text-red-600">❌ Seleccioná un período</span>'; setTimeout(() => result.innerHTML = '', 2000); return; }
             if (!archivo) { result.innerHTML = '<span class="text-red-600">❌ Adjuntá un archivo</span>'; setTimeout(() => result.innerHTML = '', 2000); return; }
-            result.innerHTML = `<div class="bg-green-100 text-green-700 p-2 rounded">✅ Comprobante de ${periodo} enviado.</div>`;
+            result.innerHTML = `<div class="bg-green-100 text-green-700 p-2 rounded">✅ Comprobante de ${periodo} enviado. Será verificado por administración.</div>`;
             document.getElementById('periodoPago').value = '';
             document.getElementById('comprobanteFile').value = '';
             setTimeout(() => result.innerHTML = '', 4000);
