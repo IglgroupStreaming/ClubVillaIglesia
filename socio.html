@@ -16,7 +16,9 @@
                     <span class="font-bold text-xl">Club Sportivo Iglesia</span>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <span id="userNameDisplay" class="text-sm hidden md:inline"></span>
+                    <a href="registro_socio.html" class="bg-green-600 px-3 py-1 rounded text-sm hover:bg-green-700">
+                        <i class="fas fa-user-plus"></i> Registrarse
+                    </a>
                     <a href="index.html" class="bg-gray-600 px-3 py-1 rounded text-sm hover:bg-gray-700">
                         <i class="fas fa-home"></i> Inicio
                     </a>
@@ -34,33 +36,18 @@
                         <i class="fas fa-user text-3xl"></i>
                     </div>
                     <h2 class="text-2xl font-bold text-gray-800">Área de Socios</h2>
-                    <p class="text-gray-600 mt-2">Ingresa con tus credenciales</p>
+                    <p class="text-gray-600 mt-2">Ingresá con tu email y número de socio</p>
                 </div>
                 
                 <div id="statusMsg" class="mb-4 p-3 rounded-lg text-sm hidden"></div>
                 
-                <!-- CREDENCIALES DE PRUEBA VISIBLES -->
+                <!-- Socios de prueba -->
                 <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
                     <p class="text-green-800 font-semibold text-sm mb-2">
-                        <i class="fas fa-check-circle"></i> Credenciales que funcionan:
+                        <i class="fas fa-check-circle"></i> Socios registrados:
                     </p>
-                    <div class="space-y-2 text-sm">
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-700">📧 juan@ejemplo.com</span>
-                            <span class="font-mono text-green-700">N° Socio: 1001</span>
-                            <button onclick="cargarCredencial('juan@ejemplo.com', '1001')" class="bg-green-600 text-white px-2 py-1 rounded text-xs">Usar</button>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-700">📧 maria@ejemplo.com</span>
-                            <span class="font-mono text-green-700">N° Socio: 1002</span>
-                            <button onclick="cargarCredencial('maria@ejemplo.com', '1002')" class="bg-green-600 text-white px-2 py-1 rounded text-xs">Usar</button>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-700">📧 carlos@ejemplo.com</span>
-                            <span class="font-mono text-green-700">N° Socio: 1003</span>
-                            <button onclick="cargarCredencial('carlos@ejemplo.com', '1003')" class="bg-green-600 text-white px-2 py-1 rounded text-xs">Usar</button>
-                        </div>
-                    </div>
+                    <div class="space-y-2 text-sm" id="listaSociosDemo"></div>
+                    <button onclick="recargarSocios()" class="mt-2 w-full bg-blue-600 text-white py-1 rounded text-xs">Recargar lista</button>
                 </div>
                 
                 <form onsubmit="return false;">
@@ -68,26 +55,26 @@
                         <label class="block text-gray-700 font-semibold mb-2">
                             <i class="fas fa-envelope"></i> Email
                         </label>
-                        <input type="email" id="loginEmail" class="w-full border border-gray-300 p-3 rounded-lg" placeholder="juan@ejemplo.com">
+                        <input type="email" id="loginEmail" class="w-full border border-gray-300 p-3 rounded-lg" placeholder="tu@email.com">
                     </div>
                     <div class="mb-4">
                         <label class="block text-gray-700 font-semibold mb-2">
                             <i class="fas fa-id-card"></i> Número de Socio
                         </label>
-                        <input type="text" id="loginSocioId" class="w-full border border-gray-300 p-3 rounded-lg" placeholder="1001">
+                        <input type="text" id="loginSocioId" class="w-full border border-gray-300 p-3 rounded-lg" placeholder="Ej: 1001">
                     </div>
                     <button onclick="iniciarSesion()" class="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700">
                         <i class="fas fa-sign-in-alt"></i> Ingresar
                     </button>
                 </form>
                 
-                <div class="mt-4 text-center text-sm text-gray-500">
-                    <a href="index.html" class="text-blue-600 hover:underline">← Volver al inicio</a>
+                <div class="mt-4 text-center">
+                    <a href="registro_socio.html" class="text-blue-600 text-sm hover:underline">¿No tenés cuenta? Registrate aquí</a>
                 </div>
             </div>
         </div>
 
-        <!-- Panel Principal (oculto hasta login) -->
+        <!-- Panel Principal del Socio -->
         <div id="panelSection" class="hidden">
             <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
@@ -174,14 +161,58 @@
     </div>
 
     <script>
-        // DATOS DE SOCIOS (funciona sin Google Sheets)
-        const sociosValidos = [
-            { id: "1001", nombre: "Juan Pérez", email: "juan@ejemplo.com", estado: "Activo", telefono: "2645123456", fechaRegistro: "2024-01-15" },
-            { id: "1002", nombre: "María Gómez", email: "maria@ejemplo.com", estado: "Activo", telefono: "2645234567", fechaRegistro: "2024-02-10" },
-            { id: "1003", nombre: "Carlos Rodríguez", email: "carlos@ejemplo.com", estado: "Suspendido", telefono: "2645345678", fechaRegistro: "2023-11-20" }
-        ];
+        // Obtener todos los socios registrados (de localStorage y Google Sheets)
+        let todosLosSocios = [];
         
-        let socioActual = null;
+        function cargarSociosRegistrados() {
+            // Cargar de localStorage
+            const locales = JSON.parse(localStorage.getItem('sociosRegistrados')) || [];
+            
+            // Socios demo por defecto
+            const sociosDemo = [
+                { id: "1001", nombre: "Juan Pérez", email: "juan@ejemplo.com", estado: "Activo" },
+                { id: "1002", nombre: "María Gómez", email: "maria@ejemplo.com", estado: "Activo" }
+            ];
+            
+            // Combinar
+            todosLosSocios = [...sociosDemo, ...locales];
+            
+            // Eliminar duplicados por email
+            const unique = [];
+            const emails = new Set();
+            for (const socio of todosLosSocios) {
+                if (!emails.has(socio.email)) {
+                    emails.add(socio.email);
+                    unique.push(socio);
+                }
+            }
+            todosLosSocios = unique;
+            
+            // Mostrar en el panel
+            mostrarListaSocios();
+        }
+        
+        function mostrarListaSocios() {
+            const container = document.getElementById('listaSociosDemo');
+            if (!container) return;
+            
+            if (todosLosSocios.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-xs">No hay socios registrados aún. ¡Registrate!</p>';
+                return;
+            }
+            
+            let html = '';
+            todosLosSocios.forEach(s => {
+                html += `
+                    <div class="flex justify-between items-center border-b pb-1">
+                        <span><strong>${s.nombre}</strong><br><span class="text-xs">${s.email}</span></span>
+                        <span class="text-blue-600 font-mono text-sm">N° ${s.id}</span>
+                        <button onclick="cargarCredencial('${s.email}', '${s.id}')" class="bg-green-600 text-white px-2 py-0.5 rounded text-xs">Usar</button>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
         
         function cargarCredencial(email, id) {
             document.getElementById('loginEmail').value = email;
@@ -189,14 +220,20 @@
             iniciarSesion();
         }
         
-        function mostrarStatus(mensaje, tipo) {
-            const status = document.getElementById('statusMsg');
-            status.textContent = mensaje;
-            status.className = `mb-4 p-3 rounded-lg text-sm ${
-                tipo === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
-            }`;
-            status.classList.remove('hidden');
-            setTimeout(() => status.classList.add('hidden'), 3000);
+        function recargarSocios() {
+            cargarSociosRegistrados();
+            mostrarMensaje('Lista actualizada', 'success');
+        }
+        
+        let socioActual = null;
+        
+        function mostrarMensaje(texto, tipo) {
+            const msg = document.getElementById('statusMsg');
+            if (!msg) return;
+            msg.textContent = texto;
+            msg.className = `mb-4 p-3 rounded-lg text-sm ${tipo === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`;
+            msg.classList.remove('hidden');
+            setTimeout(() => msg.classList.add('hidden'), 3000);
         }
         
         function iniciarSesion() {
@@ -204,11 +241,12 @@
             const socioId = document.getElementById('loginSocioId').value.trim();
             
             if (!email || !socioId) {
-                mostrarStatus('❌ Completa ambos campos', 'error');
+                mostrarMensaje('❌ Completa ambos campos', 'error');
                 return;
             }
             
-            const socio = sociosValidos.find(s => s.email === email && s.id === socioId);
+            // Buscar en todos los socios
+            const socio = todosLosSocios.find(s => s.email === email && s.id === socioId);
             
             if (socio) {
                 socioActual = socio;
@@ -217,20 +255,18 @@
                 
                 document.getElementById('socioNombre').innerHTML = socio.nombre;
                 document.getElementById('socioNumero').innerHTML = socio.id;
-                document.getElementById('userNameDisplay').innerHTML = `Hola, ${socio.nombre.split(' ')[0]}`;
                 
-                const estadoClass = socio.estado === 'Activo' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
-                document.getElementById('estadoBoton').innerHTML = socio.estado === 'Activo' ? '✅ Al día' : '⚠️ Pendiente';
+                const estadoClass = 'bg-green-100 text-green-700';
+                document.getElementById('estadoBoton').innerHTML = '✅ Al día';
                 document.getElementById('estadoBoton').className = `px-4 py-2 rounded-full text-sm font-semibold ${estadoClass}`;
                 
                 cargarDatosCompletos();
             } else {
-                mostrarStatus('❌ Credenciales incorrectas. Usá: juan@ejemplo.com / 1001', 'error');
+                mostrarMensaje('❌ Credenciales incorrectas. Si te registraste recién, recargá la página.', 'error');
             }
         }
         
         function cargarDatosCompletos() {
-            // Estado de cuenta
             document.getElementById('estadoCuenta').innerHTML = `
                 <div class="space-y-2">
                     <div class="flex justify-between border-b py-2"><span>Enero 2024</span><span>$10.000</span><span class="text-green-600">Pagada</span></div>
@@ -282,11 +318,14 @@
             if (!periodo) { result.innerHTML = '<span class="text-red-600">❌ Seleccioná un período</span>'; setTimeout(() => result.innerHTML = '', 2000); return; }
             if (!archivo) { result.innerHTML = '<span class="text-red-600">❌ Adjuntá un archivo</span>'; setTimeout(() => result.innerHTML = '', 2000); return; }
             
-            result.innerHTML = `<div class="bg-green-100 text-green-700 p-2 rounded">✅ Comprobante de ${periodo} enviado. N° seguimiento: ${Math.random().toString(36).substring(2,8).toUpperCase()}</div>`;
+            result.innerHTML = `<div class="bg-green-100 text-green-700 p-2 rounded">✅ Comprobante de ${periodo} enviado.</div>`;
             document.getElementById('periodoPago').value = '';
             document.getElementById('comprobanteFile').value = '';
             setTimeout(() => result.innerHTML = '', 4000);
         }
+        
+        // Inicializar
+        cargarSociosRegistrados();
     </script>
 </body>
 </html>
