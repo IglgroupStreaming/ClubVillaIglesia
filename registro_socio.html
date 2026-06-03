@@ -55,10 +55,7 @@
     </div>
 
     <script>
-        // Configuración de Google Sheets
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbywqVvCGj6PMKsmqUItytEHSr_tC6nlLnSPMHlLIK1J-2hX2FuW2EpYXdAZgT8xP5JV/exec';
-        
-        // Socios registrados localmente (para respaldo)
         let sociosRegistrados = JSON.parse(localStorage.getItem('sociosRegistrados')) || [];
 
         function mostrarMensaje(texto, tipo) {
@@ -80,23 +77,18 @@
                 mostrarMensaje('❌ Nombre y email son obligatorios', 'error');
                 return;
             }
-
             if (!terminos) {
                 mostrarMensaje('❌ Debes aceptar los términos y condiciones', 'error');
                 return;
             }
-
-            // Verificar si el email ya existe
             if (sociosRegistrados.some(s => s.email === email)) {
-                mostrarMensaje('❌ Este email ya está registrado. Usá "Olvidé mi número" o contactá al club.', 'error');
+                mostrarMensaje('❌ Este email ya está registrado.', 'error');
                 return;
             }
 
             mostrarMensaje('📝 Registrando...', 'info');
 
-            // Generar número de socio automático
             const nuevoId = (sociosRegistrados.length + 1001).toString();
-
             const nuevoSocio = {
                 id: nuevoId,
                 nombre: nombre,
@@ -107,11 +99,10 @@
                 fechaRegistro: new Date().toISOString().split('T')[0]
             };
 
-            // Guardar localmente
             sociosRegistrados.push(nuevoSocio);
             localStorage.setItem('sociosRegistrados', JSON.stringify(sociosRegistrados));
 
-            // Intentar guardar en Google Sheets
+            // Guardar en Google Sheets con dirección
             try {
                 await fetch(SCRIPT_URL, {
                     method: 'POST',
@@ -121,32 +112,26 @@
                         nombre: nombre,
                         email: email,
                         telefono: telefono,
+                        direccion: direccion,
                         estado: 'Activo'
                     })
                 });
-                console.log('Datos enviados a Google Sheets');
+                console.log('✅ Datos guardados en Google Sheets');
             } catch(e) {
-                console.log('No se pudo conectar a Google Sheets, datos guardados localmente');
+                console.log('⚠️ No se pudo conectar a Google Sheets');
             }
 
-            // Mostrar éxito con el número de socio
             document.getElementById('registroForm').innerHTML = `
                 <div class="text-center py-6">
                     <i class="fas fa-check-circle text-green-600 text-5xl mb-4"></i>
                     <h3 class="text-xl font-bold text-gray-800">¡Registro exitoso!</h3>
                     <p class="text-gray-600 mt-2">Tu número de socio es:</p>
                     <p class="text-3xl font-bold text-blue-600 my-2">${nuevoId}</p>
-                    <p class="text-sm text-gray-500">Usá este número y tu email para ingresar al sistema.</p>
                     <a href="socio.html" class="inline-block mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
                         Ir al inicio de sesión →
                     </a>
                 </div>
             `;
-        }
-
-        // Cargar socios existentes desde localStorage
-        if (localStorage.getItem('sociosRegistrados')) {
-            sociosRegistrados = JSON.parse(localStorage.getItem('sociosRegistrados'));
         }
     </script>
 </body>
