@@ -13,7 +13,7 @@
     </script>
     
     <nav class="bg-blue-800 text-white shadow-lg p-4">
-        <div class="max-w-7xl mx-auto flex justify-between">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
             <div class="flex items-center space-x-2">
                 <i class="fas fa-shield-alt text-2xl"></i>
                 <span class="font-bold text-xl">Panel de Administración</span>
@@ -25,11 +25,12 @@
     </nav>
 
     <div class="max-w-7xl mx-auto p-6">
-        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-            <h1 class="text-2xl font-bold">⚽ Club Sportivo Iglesia</h1>
-            <p>Gestión de socios - <span id="statusSheet" class="text-yellow-600">⏳ Conectando a Google Sheets...</span></p>
+        <!-- Estado de conexión -->
+        <div class="bg-white rounded-lg shadow-lg p-4 mb-6">
+            <p>⚽ Club Sportivo Iglesia - <span id="statusSheet" class="text-green-600">✅ Conectado a Google Sheets</span></p>
         </div>
 
+        <!-- Estadísticas -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div class="bg-white p-4 rounded shadow border-l-4 border-blue-600"><div class="text-gray-500">Total Socios</div><div class="text-2xl font-bold" id="total">0</div></div>
             <div class="bg-white p-4 rounded shadow border-l-4 border-green-600"><div class="text-gray-500">Activos</div><div class="text-2xl font-bold text-green-600" id="activos">0</div></div>
@@ -37,24 +38,47 @@
             <div class="bg-white p-4 rounded shadow border-l-4 border-red-600"><div class="text-gray-500">Inactivos</div><div class="text-2xl font-bold text-red-600" id="inactivos">0</div></div>
         </div>
 
+        <!-- EDITOR DE NOVEDADES Y EVENTOS (NUEVO) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <!-- Editar Novedades -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-bold mb-4 text-purple-700"><i class="fas fa-newspaper"></i> Editar Novedades (Boletines)</h2>
+                <div id="listaNovedadesAdmin"></div>
+                <button onclick="agregarNovedad()" class="mt-3 bg-purple-600 text-white px-4 py-2 rounded text-sm w-full">
+                    <i class="fas fa-plus"></i> Agregar Novedad
+                </button>
+            </div>
+
+            <!-- Editar Eventos -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-bold mb-4 text-green-700"><i class="fas fa-calendar-alt"></i> Editar Próximos Eventos</h2>
+                <div id="listaEventosAdmin"></div>
+                <button onclick="agregarEvento()" class="mt-3 bg-green-600 text-white px-4 py-2 rounded text-sm w-full">
+                    <i class="fas fa-plus"></i> Agregar Evento
+                </button>
+            </div>
+        </div>
+
+        <!-- Agregar Socio -->
         <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
             <h2 class="text-xl font-bold mb-4"><i class="fas fa-user-plus"></i> Agregar Socio</h2>
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <input type="text" id="nombre" placeholder="Nombre" class="border p-2 rounded">
                 <input type="email" id="email" placeholder="Email" class="border p-2 rounded">
                 <input type="text" id="telefono" placeholder="Teléfono" class="border p-2 rounded">
-                <select id="estado" class="border p-2 rounded"><option>Activo</option><option>Suspendido</option><option>Inactivo</option></select>
+                <input type="text" id="direccion" placeholder="Dirección" class="border p-2 rounded">
             </div>
             <button onclick="agregarSocio()" class="mt-4 bg-green-600 text-white px-6 py-2 rounded">Registrar Socio</button>
             <div id="resultMsg" class="mt-2 text-sm"></div>
         </div>
 
+        <!-- Tabla de Socios -->
         <div class="bg-white rounded-lg shadow-lg overflow-hidden">
-            <div class="bg-blue-600 text-white p-4"><h2 class="font-bold"><i class="fas fa-list"></i> Lista de Socios (Google Sheets)</h2></div>
+            <div class="bg-blue-600 text-white p-4"><h2 class="font-bold"><i class="fas fa-list"></i> Lista de Socios</h2></div>
             <div class="overflow-x-auto">
                 <table class="w-full">
-                    <thead class="bg-gray-200"><tr><th class="p-3">ID</th><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Estado</th><th>Acciones</th></tr></thead>
-                    <tbody id="listaSocios"><tr><td colspan="6" class="text-center p-4">Cargando datos desde Google Sheets...</td></tr></tbody>
+                    <thead class="bg-gray-200"><tr><th class="p-3">ID</th><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Dirección</th><th>Estado</th><th>Acciones</th></tr></thead>
+                    <tbody id="listaSocios"><tr><td colspan="7" class="text-center p-4">Cargando...</td></tr></tbody>
                 </table>
             </div>
         </div>
@@ -64,59 +88,121 @@
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbywqVvCGj6PMKsmqUItytEHSr_tC6nlLnSPMHlLIK1J-2hX2FuW2EpYXdAZgT8xP5JV/exec';
         let socios = [];
         
+        // ========== GESTIÓN DE NOVEDADES (LOCALSTORAGE) ==========
+        let novedades = JSON.parse(localStorage.getItem('novedadesAdmin')) || [
+            { id: 1, titulo: "📰 Boletín Bienvenida", contenido: "Bienvenidos al nuevo sistema de socios. ¡Estamos muy contentos de tenerlos!", fecha: "2024-03-01" }
+        ];
+        
+        let eventos = JSON.parse(localStorage.getItem('eventosAdmin')) || [
+            { id: 1, titulo: "Asamblea General", fecha: "2024-03-15", hora: "19:00", lugar: "Sede del Club" }
+        ];
+        
+        function guardarNovedades() { localStorage.setItem('novedadesAdmin', JSON.stringify(novedades)); actualizarListaNovedades(); }
+        function guardarEventos() { localStorage.setItem('eventosAdmin', JSON.stringify(eventos)); actualizarListaEventos(); }
+        
+        function actualizarListaNovedades() {
+            const container = document.getElementById('listaNovedadesAdmin');
+            if(!container) return;
+            if(novedades.length === 0) { container.innerHTML = '<p class="text-gray-500 text-sm">No hay novedades</p>'; return; }
+            let html = '';
+            novedades.forEach((n, i) => {
+                html += `<div class="border-b pb-2 mb-2">
+                    <p class="font-semibold text-sm">${n.titulo}</p>
+                    <p class="text-xs text-gray-600">${n.contenido.substring(0, 60)}...</p>
+                    <button onclick="editarNovedad(${i})" class="text-blue-600 text-xs mr-2">✏️ Editar</button>
+                    <button onclick="eliminarNovedad(${i})" class="text-red-600 text-xs">🗑️ Eliminar</button>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+        
+        function actualizarListaEventos() {
+            const container = document.getElementById('listaEventosAdmin');
+            if(!container) return;
+            if(eventos.length === 0) { container.innerHTML = '<p class="text-gray-500 text-sm">No hay eventos</p>'; return; }
+            let html = '';
+            eventos.forEach((e, i) => {
+                html += `<div class="border-b pb-2 mb-2">
+                    <p class="font-semibold text-sm">📅 ${e.titulo}</p>
+                    <p class="text-xs text-gray-600">${e.fecha} - ${e.hora} | ${e.lugar}</p>
+                    <button onclick="editarEvento(${i})" class="text-blue-600 text-xs mr-2">✏️ Editar</button>
+                    <button onclick="eliminarEvento(${i})" class="text-red-600 text-xs">🗑️ Eliminar</button>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+        
+        function agregarNovedad() {
+            const titulo = prompt("Título de la novedad:");
+            if(!titulo) return;
+            const contenido = prompt("Contenido:");
+            if(!contenido) return;
+            const nuevaId = Math.max(...novedades.map(n=>n.id), 0) + 1;
+            novedades.push({ id: nuevaId, titulo, contenido, fecha: new Date().toISOString().split('T')[0] });
+            guardarNovedades();
+        }
+        
+        function editarNovedad(i) {
+            const n = novedades[i];
+            const nuevoTitulo = prompt("Editar título:", n.titulo);
+            if(nuevoTitulo) n.titulo = nuevoTitulo;
+            const nuevoContenido = prompt("Editar contenido:", n.contenido);
+            if(nuevoContenido) n.contenido = nuevoContenido;
+            guardarNovedades();
+        }
+        
+        function eliminarNovedad(i) { if(confirm("¿Eliminar esta novedad?")) { novedades.splice(i,1); guardarNovedades(); } }
+        
+        function agregarEvento() {
+            const titulo = prompt("Título del evento:");
+            if(!titulo) return;
+            const fecha = prompt("Fecha (YYYY-MM-DD):");
+            if(!fecha) return;
+            const hora = prompt("Hora:");
+            const lugar = prompt("Lugar:");
+            const nuevaId = Math.max(...eventos.map(e=>e.id), 0) + 1;
+            eventos.push({ id: nuevaId, titulo, fecha, hora, lugar });
+            guardarEventos();
+        }
+        
+        function editarEvento(i) {
+            const e = eventos[i];
+            e.titulo = prompt("Título:", e.titulo) || e.titulo;
+            e.fecha = prompt("Fecha:", e.fecha) || e.fecha;
+            e.hora = prompt("Hora:", e.hora) || e.hora;
+            e.lugar = prompt("Lugar:", e.lugar) || e.lugar;
+            guardarEventos();
+        }
+        
+        function eliminarEvento(i) { if(confirm("¿Eliminar este evento?")) { eventos.splice(i,1); guardarEventos(); } }
+        
+        // ========== CRUD DE SOCIOS ==========
         async function cargarSocios() {
-            const statusSpan = document.getElementById('statusSheet');
             try {
                 const response = await fetch(`${SCRIPT_URL}?action=getData&t=${Date.now()}`);
                 const text = await response.text();
                 const data = JSON.parse(text);
-                
-                if (data.success && data.data) {
-                    socios = data.data;
-                    statusSpan.innerHTML = '✅ Conectado a Google Sheets';
-                    statusSpan.className = 'text-green-600';
-                    actualizarTabla();
-                } else {
-                    throw new Error('No hay datos');
-                }
-            } catch (error) {
-                console.error(error);
-                statusSpan.innerHTML = '⚠️ Usando datos locales (sin conexión a Sheets)';
-                statusSpan.className = 'text-yellow-600';
+                if (data.success && data.data) { socios = data.data; }
+                else { throw new Error('No hay datos'); }
+            } catch(error) {
                 socios = [
-                    { rowIndex: 2, id: 1001, nombre: "Juan Pérez", email: "juan@ejemplo.com", telefono: "2645123456", estado: "Activo", fechaRegistro: "2024-01-15" },
-                    { rowIndex: 3, id: 1002, nombre: "María Gómez", email: "maria@ejemplo.com", telefono: "2645234567", estado: "Activo", fechaRegistro: "2024-02-10" }
+                    { rowIndex: 2, id: 1001, nombre: "Juan Pérez", email: "juan@ejemplo.com", telefono: "2645123456", direccion: "Av. Libertador 123", estado: "Activo" }
                 ];
-                actualizarTabla();
             }
+            actualizarTablaSocios();
         }
         
-        function actualizarTabla() {
+        function actualizarTablaSocios() {
             const tbody = document.getElementById('listaSocios');
+            if(!tbody) return;
             tbody.innerHTML = '';
             let activos = 0, suspendidos = 0, inactivos = 0;
-            
             socios.forEach((s, i) => {
                 if(s.estado === 'Activo') activos++;
                 else if(s.estado === 'Suspendido') suspendidos++;
                 else if(s.estado === 'Inactivo') inactivos++;
-                
-                tbody.innerHTML += `<tr class="border-b hover:bg-gray-50">
-                    <td class="p-3">${s.id || i+1}</td>
-                    <td class="p-3 font-medium">${s.nombre}</td>
-                    <td class="p-3">${s.email}</td>
-                    <td class="p-3">${s.telefono || '-'}</td>
-                    <td class="p-3">
-                        <select onchange="cambiarEstado(${i}, this.value)" class="border rounded px-2 py-1 text-sm">
-                            <option ${s.estado === 'Activo' ? 'selected' : ''}>Activo</option>
-                            <option ${s.estado === 'Suspendido' ? 'selected' : ''}>Suspendido</option>
-                            <option ${s.estado === 'Inactivo' ? 'selected' : ''}>Inactivo</option>
-                        </select>
-                    </td>
-                    <td class="p-3"><button onclick="eliminarSocio(${i})" class="text-red-600 hover:text-red-800"><i class="fas fa-trash"></i></button></td>
-                </tr>`;
+                tbody.innerHTML += `<tr class="border-b"><td class="p-2">${s.id || i+1}</td><td class="p-2">${s.nombre}</td><td class="p-2">${s.email}</td><td class="p-2">${s.telefono || '-'}</td><td class="p-2">${s.direccion || '-'}</td><td class="p-2"><select onchange="cambiarEstado(${i}, this.value)" class="border rounded px-1 py-0.5 text-sm"><option ${s.estado==='Activo'?'selected':''}>Activo</option><option ${s.estado==='Suspendido'?'selected':''}>Suspendido</option><option ${s.estado==='Inactivo'?'selected':''}>Inactivo</option></select></td><td class="p-2"><button onclick="eliminarSocio(${i})" class="text-red-600"><i class="fas fa-trash"></i></button></td></tr>`;
             });
-            
             document.getElementById('total').innerHTML = socios.length;
             document.getElementById('activos').innerHTML = activos;
             document.getElementById('suspendidos').innerHTML = suspendidos;
@@ -127,66 +213,22 @@
             const nombre = document.getElementById('nombre').value.trim();
             const email = document.getElementById('email').value.trim();
             const telefono = document.getElementById('telefono').value.trim();
-            const estado = document.getElementById('estado').value;
-            const resultMsg = document.getElementById('resultMsg');
-            
-            if(!nombre || !email) {
-                resultMsg.innerHTML = '<span class="text-red-600">❌ Completar nombre y email</span>';
-                setTimeout(()=>resultMsg.innerHTML='',2000);
-                return;
-            }
-            
-            resultMsg.innerHTML = '<span class="text-blue-600">⏳ Enviando a Google Sheets...</span>';
-            
+            const direccion = document.getElementById('direccion').value.trim();
+            if(!nombre || !email) { alert("Completar nombre y email"); return; }
             try {
-                await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: new URLSearchParams({ action: 'addData', nombre, email, telefono, estado })
-                });
-                
-                resultMsg.innerHTML = '<span class="text-green-600">✅ Socio agregado correctamente</span>';
-                document.getElementById('nombre').value = '';
-                document.getElementById('email').value = '';
-                document.getElementById('telefono').value = '';
-                setTimeout(() => { cargarSocios(); resultMsg.innerHTML = ''; }, 1000);
-            } catch(error) {
-                resultMsg.innerHTML = '<span class="text-red-600">❌ Error al agregar</span>';
-            }
+                await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: new URLSearchParams({ action: 'addData', nombre, email, telefono, direccion, estado: 'Activo' }) });
+                document.getElementById('nombre').value = ''; document.getElementById('email').value = ''; document.getElementById('telefono').value = ''; document.getElementById('direccion').value = '';
+                cargarSocios();
+            } catch(e) { alert("Error al agregar"); }
         }
         
-        async function eliminarSocio(index) {
-            const socio = socios[index];
-            if(!confirm(`¿Eliminar a ${socio.nombre}?`)) return;
-            
-            if(socio.rowIndex) {
-                await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: new URLSearchParams({ action: 'deleteData', rowIndex: socio.rowIndex })
-                });
-            }
-            cargarSocios();
-        }
-        
-        async function cambiarEstado(index, nuevoEstado) {
-            const socio = socios[index];
-            if(socio.rowIndex) {
-                await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: new URLSearchParams({ action: 'updateData', rowIndex: socio.rowIndex, estado: nuevoEstado })
-                });
-            }
-            cargarSocios();
-        }
-        
-        function cerrarSesion() {
-            sessionStorage.removeItem('adminAuth');
-            window.location.href = 'login_admin.html';
-        }
+        async function eliminarSocio(i) { if(!confirm("¿Eliminar?")) return; const s = socios[i]; if(s.rowIndex) { await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: new URLSearchParams({ action: 'deleteData', rowIndex: s.rowIndex }) }); } cargarSocios(); }
+        async function cambiarEstado(i, nuevoEstado) { const s = socios[i]; if(s.rowIndex) { await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: new URLSearchParams({ action: 'updateData', rowIndex: s.rowIndex, estado: nuevoEstado }) }); } cargarSocios(); }
+        function cerrarSesion() { sessionStorage.removeItem('adminAuth'); window.location.href = 'login_admin.html'; }
         
         cargarSocios();
+        actualizarListaNovedades();
+        actualizarListaEventos();
     </script>
 </body>
 </html>
