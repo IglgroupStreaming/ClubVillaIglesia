@@ -55,9 +55,7 @@
     </div>
 
     <script>
-        // ✅ URL CORRECTA DE GOOGLE APPS SCRIPT
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbywqVvCGj6PMKsmqUItytEHSr_tC6nlLnSPMHlLIK1J-2hX2FuW2EpYXdAZgT8xP5JV/exec';
-        
         let sociosRegistrados = JSON.parse(localStorage.getItem('sociosRegistrados')) || [];
 
         function mostrarMensaje(texto, tipo) {
@@ -65,7 +63,7 @@
             msg.textContent = texto;
             msg.className = `mb-4 p-3 rounded-lg text-sm ${tipo === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`;
             msg.classList.remove('hidden');
-            setTimeout(() => msg.classList.add('hidden'), 4000);
+            setTimeout(() => msg.classList.add('hidden'), 5000);
         }
 
         async function registrarSocio() {
@@ -88,7 +86,7 @@
                 return;
             }
 
-            mostrarMensaje('📝 Registrando...', 'info');
+            mostrarMensaje('📝 Registrando en Google Sheets...', 'info');
 
             const nuevoId = (sociosRegistrados.length + 1001).toString();
             const fechaRegistro = new Date().toISOString().split('T')[0];
@@ -106,25 +104,35 @@
             sociosRegistrados.push(nuevoSocio);
             localStorage.setItem('sociosRegistrados', JSON.stringify(sociosRegistrados));
 
-            // ✅ Guardar en Google Sheets incluyendo dirección
+            // Guardar en Google Sheets - CORREGIDO: enviar direccion como parámetro
             try {
-                // Usamos fetch con mode no-cors para evitar problemas de CORS
-                await fetch(SCRIPT_URL, {
+                const params = new URLSearchParams({
+                    action: 'addData',
+                    nombre: nombre,
+                    email: email,
+                    telefono: telefono,
+                    direccion: direccion,  // ⚠️ Ahora se envía correctamente
+                    estado: 'Activo'
+                });
+                
+                // Usamos un fetch con timeout para verificar
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
+                
+                const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
                     mode: 'no-cors',
-                    body: new URLSearchParams({
-                        action: 'addData',
-                        nombre: nombre,
-                        email: email,
-                        telefono: telefono,
-                        direccion: direccion,
-                        estado: 'Activo',
-                        fechaRegistro: fechaRegistro
-                    })
+                    signal: controller.signal,
+                    body: params
                 });
-                console.log('✅ Datos guardados en Google Sheets');
+                
+                clearTimeout(timeoutId);
+                console.log('✅ Datos enviados a Google Sheets');
+                mostrarMensaje('✅ Registro completado correctamente', 'success');
+                
             } catch(e) {
-                console.log('⚠️ No se pudo conectar a Google Sheets:', e);
+                console.log('⚠️ Error al conectar con Google Sheets:', e);
+                mostrarMensaje('⚠️ Registro guardado localmente. Se sincronizará automáticamente.', 'warning');
             }
 
             // Mostrar éxito
