@@ -56,7 +56,31 @@
 
     <script>
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbywqVvCGj6PMKsmqUItytEHSr_tC6nlLnSPMHlLIK1J-2hX2FuW2EpYXdAZgT8xP5JV/exec';
-        let sociosRegistrados = JSON.parse(localStorage.getItem('sociosRegistrados')) || [];
+        
+        // Obtener el próximo número de socio desde Google Sheets o localStorage
+        async function obtenerProximoId() {
+            try {
+                // Intentar obtener el último ID desde Google Sheets
+                const response = await fetch(`${SCRIPT_URL}?action=getData&t=${Date.now()}`);
+                const text = await response.text();
+                const data = JSON.parse(text);
+                
+                if (data.success && data.data && data.data.length > 0) {
+                    const ids = data.data.map(s => parseInt(s.id)).filter(id => !isNaN(id));
+                    const maxId = Math.max(...ids, 1000);
+                    return (maxId + 1).toString();
+                }
+            } catch(e) {
+                console.log('Error al obtener ID desde Sheets:', e);
+            }
+            
+            // Fallback: usar localStorage
+            let socios = JSON.parse(localStorage.getItem('sociosRegistrados')) || [];
+            if (socios.length === 0) return '1001';
+            const ids = socios.map(s => parseInt(s.id)).filter(id => !isNaN(id));
+            const maxId = Math.max(...ids, 1000);
+            return (maxId + 1).toString();
+        }
 
         function mostrarMensaje(texto, tipo) {
             const msg = document.getElementById('mensaje');
@@ -81,15 +105,21 @@
                 mostrarMensaje('❌ Debes aceptar los términos y condiciones', 'error');
                 return;
             }
+
+            mostrarMensaje('📝 Registrando...', 'info');
+
+            // Obtener nuevo ID automático
+            const nuevoId = await obtenerProximoId();
+            const fechaRegistro = new Date().toISOString().split('T')[0];
+            
+            // Guardar en localStorage
+            let sociosRegistrados = JSON.parse(localStorage.getItem('sociosRegistrados')) || [];
+            
+            // Verificar email duplicado en localStorage
             if (sociosRegistrados.some(s => s.email === email)) {
                 mostrarMensaje('❌ Este email ya está registrado.', 'error');
                 return;
             }
-
-            mostrarMensaje('📝 Registrando en Google Sheets...', 'info');
-
-            const nuevoId = (sociosRegistrados.length + 1001).toString();
-            const fechaRegistro = new Date().toISOString().split('T')[0];
             
             const nuevoSocio = {
                 id: nuevoId,
@@ -104,38 +134,30 @@
             sociosRegistrados.push(nuevoSocio);
             localStorage.setItem('sociosRegistrados', JSON.stringify(sociosRegistrados));
 
-            // Guardar en Google Sheets - CORREGIDO: enviar direccion como parámetro
+            // Guardar en Google Sheets
             try {
                 const params = new URLSearchParams({
                     action: 'addData',
                     nombre: nombre,
                     email: email,
                     telefono: telefono,
-                    direccion: direccion,  // ⚠️ Ahora se envía correctamente
+                    direccion: direccion,
                     estado: 'Activo'
                 });
                 
-                // Usamos un fetch con timeout para verificar
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000);
-                
-                const response = await fetch(SCRIPT_URL, {
+                await fetch(SCRIPT_URL, {
                     method: 'POST',
                     mode: 'no-cors',
-                    signal: controller.signal,
                     body: params
                 });
                 
-                clearTimeout(timeoutId);
-                console.log('✅ Datos enviados a Google Sheets');
-                mostrarMensaje('✅ Registro completado correctamente', 'success');
+                console.log('✅ Datos guardados en Google Sheets');
                 
             } catch(e) {
-                console.log('⚠️ Error al conectar con Google Sheets:', e);
-                mostrarMensaje('⚠️ Registro guardado localmente. Se sincronizará automáticamente.', 'warning');
+                console.log('⚠️ Error al guardar en Google Sheets:', e);
             }
 
-            // Mostrar éxito
+            // Mostrar éxito con el número de socio
             document.getElementById('registroForm').innerHTML = `
                 <div class="text-center py-6">
                     <i class="fas fa-check-circle text-green-600 text-5xl mb-4"></i>
