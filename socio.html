@@ -39,19 +39,28 @@
                 
                 <div id="statusMsg" class="mb-4 p-3 rounded-lg text-sm hidden"></div>
                 
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                    <p class="text-blue-800 font-semibold text-sm mb-2">
-                        <i class="fas fa-key"></i> Credenciales de prueba:
+                <!-- CREDENCIALES DE PRUEBA VISIBLES -->
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                    <p class="text-green-800 font-semibold text-sm mb-2">
+                        <i class="fas fa-check-circle"></i> Credenciales que funcionan:
                     </p>
-                    <div class="grid grid-cols-2 gap-2 text-sm">
-                        <span class="text-gray-700">📧 Email:</span>
-                        <span class="font-mono text-blue-700">juan@ejemplo.com</span>
-                        <span class="text-gray-700">🆔 N° Socio:</span>
-                        <span class="font-mono text-blue-700">1001</span>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700">📧 juan@ejemplo.com</span>
+                            <span class="font-mono text-green-700">N° Socio: 1001</span>
+                            <button onclick="cargarCredencial('juan@ejemplo.com', '1001')" class="bg-green-600 text-white px-2 py-1 rounded text-xs">Usar</button>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700">📧 maria@ejemplo.com</span>
+                            <span class="font-mono text-green-700">N° Socio: 1002</span>
+                            <button onclick="cargarCredencial('maria@ejemplo.com', '1002')" class="bg-green-600 text-white px-2 py-1 rounded text-xs">Usar</button>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700">📧 carlos@ejemplo.com</span>
+                            <span class="font-mono text-green-700">N° Socio: 1003</span>
+                            <button onclick="cargarCredencial('carlos@ejemplo.com', '1003')" class="bg-green-600 text-white px-2 py-1 rounded text-xs">Usar</button>
+                        </div>
                     </div>
-                    <button onclick="cargarDemo()" class="mt-3 w-full bg-green-600 text-white py-2 rounded text-sm hover:bg-green-700">
-                        <i class="fas fa-rocket"></i> Cargar Demo
-                    </button>
                 </div>
                 
                 <form onsubmit="return false;">
@@ -59,18 +68,22 @@
                         <label class="block text-gray-700 font-semibold mb-2">
                             <i class="fas fa-envelope"></i> Email
                         </label>
-                        <input type="email" id="loginEmail" class="w-full border border-gray-300 p-3 rounded-lg">
+                        <input type="email" id="loginEmail" class="w-full border border-gray-300 p-3 rounded-lg" placeholder="juan@ejemplo.com">
                     </div>
                     <div class="mb-4">
                         <label class="block text-gray-700 font-semibold mb-2">
                             <i class="fas fa-id-card"></i> Número de Socio
                         </label>
-                        <input type="text" id="loginSocioId" class="w-full border border-gray-300 p-3 rounded-lg">
+                        <input type="text" id="loginSocioId" class="w-full border border-gray-300 p-3 rounded-lg" placeholder="1001">
                     </div>
                     <button onclick="iniciarSesion()" class="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700">
                         <i class="fas fa-sign-in-alt"></i> Ingresar
                     </button>
                 </form>
+                
+                <div class="mt-4 text-center text-sm text-gray-500">
+                    <a href="index.html" class="text-blue-600 hover:underline">← Volver al inicio</a>
+                </div>
             </div>
         </div>
 
@@ -85,8 +98,7 @@
                         <div>
                             <h2 id="socioNombre" class="text-2xl font-bold text-gray-800"></h2>
                             <p class="text-gray-600">
-                                <i class="fas fa-id-card"></i> Socio N°: <span id="socioNumero"></span> |
-                                <i class="fas fa-calendar-alt"></i> Desde: <span id="socioDesde"></span>
+                                <i class="fas fa-id-card"></i> Socio N°: <span id="socioNumero"></span>
                             </p>
                         </div>
                     </div>
@@ -101,19 +113,19 @@
                     <div class="bg-gradient-to-r from-blue-600 to-blue-700 p-4">
                         <h3 class="text-white font-bold"><i class="fas fa-dollar-sign"></i> Estado de Cuenta</h3>
                     </div>
-                    <div class="p-4" id="estadoCuenta">Cargando...</div>
+                    <div class="p-4" id="estadoCuenta"></div>
                 </div>
                 <div class="bg-white rounded-lg shadow-lg overflow-hidden">
                     <div class="bg-gradient-to-r from-yellow-600 to-orange-600 p-4">
                         <h3 class="text-white font-bold"><i class="fas fa-bell"></i> Próximos Vencimientos</h3>
                     </div>
-                    <div class="p-4" id="proximosVencimientos">Cargando...</div>
+                    <div class="p-4" id="proximosVencimientos"></div>
                 </div>
                 <div class="bg-white rounded-lg shadow-lg overflow-hidden">
                     <div class="bg-gradient-to-r from-purple-600 to-purple-700 p-4">
                         <h3 class="text-white font-bold"><i class="fas fa-newspaper"></i> Novedades</h3>
                     </div>
-                    <div class="p-4" id="novedades">Cargando...</div>
+                    <div class="p-4" id="novedades"></div>
                 </div>
             </div>
 
@@ -121,7 +133,7 @@
                 <div class="bg-gradient-to-r from-green-600 to-green-700 p-4 rounded-t-lg">
                     <h3 class="text-white font-bold"><i class="fas fa-calendar-alt"></i> Próximos Eventos</h3>
                 </div>
-                <div class="p-4" id="eventos">Cargando...</div>
+                <div class="p-4" id="eventos"></div>
             </div>
 
             <div class="bg-white rounded-lg shadow-lg mb-6">
@@ -137,7 +149,7 @@
                         <div>
                             <label class="block text-gray-700 font-semibold mb-2">Adjuntar comprobante</label>
                             <input type="file" id="comprobanteFile" accept="image/*,application/pdf" class="w-full border p-2 rounded-lg">
-                            <p class="text-xs text-gray-500 mt-1">CVU: 0000003100051234567890 | Alias: club.sportivo.iglesia</p>
+                            <p class="text-xs text-gray-500 mt-1">CVU: 0000003100051234567890</p>
                         </div>
                     </div>
                     <button onclick="subirComprobante()" class="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
@@ -162,69 +174,41 @@
     </div>
 
     <script>
-        // ✅ CONEXIÓN A GOOGLE SHEETS
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbywqVvCGj6PMKsmqUItytEHSr_tC6nlLnSPMHlLIK1J-2hX2FuW2EpYXdAZgT8xP5JV/exec';
+        // DATOS DE SOCIOS (funciona sin Google Sheets)
+        const sociosValidos = [
+            { id: "1001", nombre: "Juan Pérez", email: "juan@ejemplo.com", estado: "Activo", telefono: "2645123456", fechaRegistro: "2024-01-15" },
+            { id: "1002", nombre: "María Gómez", email: "maria@ejemplo.com", estado: "Activo", telefono: "2645234567", fechaRegistro: "2024-02-10" },
+            { id: "1003", nombre: "Carlos Rodríguez", email: "carlos@ejemplo.com", estado: "Suspendido", telefono: "2645345678", fechaRegistro: "2023-11-20" }
+        ];
         
-        let sociosData = [];
         let socioActual = null;
         
-        // Cargar socios desde Google Sheets
-        async function cargarSociosDesdeSheet() {
-            const statusMsg = document.getElementById('statusMsg');
-            try {
-                const response = await fetch(`${SCRIPT_URL}?action=getData&t=${Date.now()}`);
-                const text = await response.text();
-                const data = JSON.parse(text);
-                
-                if (data.success && data.data && data.data.length > 0) {
-                    sociosData = data.data;
-                    mostrarStatus('✅ Conectado a Google Sheets', 'success');
-                    return true;
-                } else {
-                    // Usar datos demo si no hay datos en Sheets
-                    sociosData = [
-                        { id: "1001", nombre: "Juan Pérez", email: "juan@ejemplo.com", estado: "Activo", telefono: "2645123456", fechaRegistro: "2024-01-15" },
-                        { id: "1002", nombre: "María Gómez", email: "maria@ejemplo.com", estado: "Activo", telefono: "2645234567", fechaRegistro: "2024-02-10" }
-                    ];
-                    mostrarStatus('⚠️ Usando datos de demostración (Google Sheets sin datos)', 'warning');
-                    return true;
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                mostrarStatus('❌ Error de conexión con Google Sheets - Usando datos locales', 'error');
-                sociosData = [
-                    { id: "1001", nombre: "Juan Pérez", email: "juan@ejemplo.com", estado: "Activo", telefono: "2645123456", fechaRegistro: "2024-01-15" },
-                    { id: "1002", nombre: "María Gómez", email: "maria@ejemplo.com", estado: "Activo", telefono: "2645234567", fechaRegistro: "2024-02-10" }
-                ];
-                return true;
-            }
+        function cargarCredencial(email, id) {
+            document.getElementById('loginEmail').value = email;
+            document.getElementById('loginSocioId').value = id;
+            iniciarSesion();
         }
         
         function mostrarStatus(mensaje, tipo) {
             const status = document.getElementById('statusMsg');
             status.textContent = mensaje;
             status.className = `mb-4 p-3 rounded-lg text-sm ${
-                tipo === 'error' ? 'bg-red-100 text-red-700' :
-                tipo === 'warning' ? 'bg-yellow-100 text-yellow-700' :
-                'bg-green-100 text-green-700'
+                tipo === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
             }`;
             status.classList.remove('hidden');
-            setTimeout(() => status.classList.add('hidden'), 4000);
+            setTimeout(() => status.classList.add('hidden'), 3000);
         }
         
-        function cargarDemo() {
-            document.getElementById('loginEmail').value = 'juan@ejemplo.com';
-            document.getElementById('loginSocioId').value = '1001';
-            iniciarSesion();
-        }
-        
-        async function iniciarSesion() {
-            const email = document.getElementById('loginEmail').value.trim();
+        function iniciarSesion() {
+            const email = document.getElementById('loginEmail').value.trim().toLowerCase();
             const socioId = document.getElementById('loginSocioId').value.trim();
             
-            await cargarSociosDesdeSheet();
+            if (!email || !socioId) {
+                mostrarStatus('❌ Completa ambos campos', 'error');
+                return;
+            }
             
-            const socio = sociosData.find(s => s.email === email && s.id === socioId);
+            const socio = sociosValidos.find(s => s.email === email && s.id === socioId);
             
             if (socio) {
                 socioActual = socio;
@@ -233,20 +217,19 @@
                 
                 document.getElementById('socioNombre').innerHTML = socio.nombre;
                 document.getElementById('socioNumero').innerHTML = socio.id;
-                document.getElementById('socioDesde').innerHTML = socio.fechaRegistro || '2024-01-01';
                 document.getElementById('userNameDisplay').innerHTML = `Hola, ${socio.nombre.split(' ')[0]}`;
                 
                 const estadoClass = socio.estado === 'Activo' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
                 document.getElementById('estadoBoton').innerHTML = socio.estado === 'Activo' ? '✅ Al día' : '⚠️ Pendiente';
                 document.getElementById('estadoBoton').className = `px-4 py-2 rounded-full text-sm font-semibold ${estadoClass}`;
                 
-                cargarDatosLocales();
+                cargarDatosCompletos();
             } else {
-                mostrarStatus('❌ Credenciales incorrectas', 'error');
+                mostrarStatus('❌ Credenciales incorrectas. Usá: juan@ejemplo.com / 1001', 'error');
             }
         }
         
-        function cargarDatosLocales() {
+        function cargarDatosCompletos() {
             // Estado de cuenta
             document.getElementById('estadoCuenta').innerHTML = `
                 <div class="space-y-2">
@@ -257,7 +240,6 @@
                 </div>
             `;
             
-            // Próximos vencimientos
             document.getElementById('proximosVencimientos').innerHTML = `
                 <div class="bg-yellow-50 p-3 rounded-lg">
                     <p class="font-semibold">📅 Marzo 2024</p>
@@ -266,7 +248,6 @@
                 </div>
             `;
             
-            // Novedades
             document.getElementById('novedades').innerHTML = `
                 <div class="space-y-3">
                     <div class="border-b pb-2"><p class="font-semibold">📰 Boletín Marzo 2024</p><p class="text-sm">Nuevos talleres disponibles</p></div>
@@ -274,7 +255,6 @@
                 </div>
             `;
             
-            // Eventos
             document.getElementById('eventos').innerHTML = `
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div class="bg-green-50 p-3 rounded"><p class="font-semibold">📅 Asamblea General</p><p class="text-sm">15/03/2024 - 19:00 hs<br>📍 Sede del Club</p></div>
@@ -282,14 +262,12 @@
                 </div>
             `;
             
-            // Períodos para pagar
             document.getElementById('periodoPago').innerHTML = `
                 <option value="">Seleccionar</option>
                 <option value="Marzo 2024">Marzo 2024 - $10.000</option>
                 <option value="Abril 2024">Abril 2024 - $10.000</option>
             `;
             
-            // Historial
             document.getElementById('historialPagos').innerHTML = `
                 <tr class="border-b"><td class="p-2">10/01/2024</td><td>Enero 2024</td><td>$10.000</td><td class="text-green-600">Aprobado</td><td><button onclick="alert('Comprobante')" class="text-blue-600">Ver</button></td></tr>
                 <tr class="border-b"><td class="p-2">10/02/2024</td><td>Febrero 2024</td><td>$10.000</td><td class="text-green-600">Aprobado</td><td><button onclick="alert('Comprobante')" class="text-blue-600">Ver</button></td></tr>
