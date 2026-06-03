@@ -25,9 +25,12 @@
     </nav>
 
     <div class="max-w-7xl mx-auto p-6">
-        <!-- Estado -->
-        <div class="bg-white rounded-lg shadow-lg p-4 mb-6">
-            <p>⚽ Club Sportivo Iglesia - <span id="statusSheet" class="text-green-600">✅ Conectado a Google Sheets</span></p>
+        <!-- Estado de conexión -->
+        <div class="bg-white rounded-lg shadow-lg p-4 mb-6 flex justify-between items-center">
+            <p>⚽ Club Sportivo Iglesia - <span id="statusSheet" class="text-yellow-600">🔄 Verificando conexión...</span></p>
+            <button onclick="probarConexion()" class="bg-blue-600 text-white px-3 py-1 rounded text-sm">
+                <i class="fas fa-plug"></i> Probar conexión
+            </button>
         </div>
 
         <!-- Estadísticas -->
@@ -56,9 +59,9 @@
             </div>
         </div>
 
-        <!-- GESTIÓN DE PAGOS (CADA 31 DÍAS) -->
+        <!-- GESTIÓN DE PAGOS -->
         <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-            <h2 class="text-xl font-bold mb-4 text-blue-700"><i class="fas fa-credit-card"></i> Gestión de Pagos (Cada 31 días)</h2>
+            <h2 class="text-xl font-bold mb-4 text-blue-700"><i class="fas fa-credit-card"></i> Gestión de Pagos</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <select id="socioPago" class="border p-2 rounded">
                     <option value="">Seleccionar Socio</option>
@@ -69,7 +72,6 @@
                 </button>
             </div>
             <div id="resultadoPago" class="text-sm mt-2"></div>
-            <p class="text-xs text-gray-500 mt-3">📌 Los pagos se registran automáticamente cada 31 días desde la última fecha de pago.</p>
         </div>
 
         <!-- Agregar Socio -->
@@ -90,8 +92,10 @@
             <div class="bg-blue-600 text-white p-4"><h2 class="font-bold"><i class="fas fa-list"></i> Lista de Socios</h2></div>
             <div class="overflow-x-auto">
                 <table class="w-full">
-                    <thead class="bg-gray-200"><tr><th class="p-3">ID</th><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Dirección</th><th>Estado</th><th>Último Pago</th><th>Próximo Pago</th><th>Acciones</th></tr></thead>
-                    <tbody id="listaSocios"><tr><td colspan="9" class="text-center p-4">Cargando...</td></tr></tbody>
+                    <thead class="bg-gray-200">
+                        <tr><th class="p-3">ID</th><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Dirección</th><th>Estado</th><th>Acciones</th></tr>
+                    </thead>
+                    <tbody id="listaSocios"><tr><td colspan="7" class="text-center p-4">Cargando...</td></tr></tbody>
                 </table>
             </div>
         </div>
@@ -101,19 +105,36 @@
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbywqVvCGj6PMKsmqUItytEHSr_tC6nlLnSPMHlLIK1J-2hX2FuW2EpYXdAZgT8xP5JV/exec';
         let socios = [];
         
-        // Gestión de pagos en localStorage
+        // Pagos en localStorage
         let pagosSocios = JSON.parse(localStorage.getItem('pagosSocios')) || {};
-        
         function guardarPagos() { localStorage.setItem('pagosSocios', JSON.stringify(pagosSocios)); }
         
-        function calcularProximoPago(ultimoPago) {
-            if (!ultimoPago) return 'Pendiente primer pago';
-            const fecha = new Date(ultimoPago);
-            fecha.setDate(fecha.getDate() + 31);
-            return fecha.toISOString().split('T')[0];
+        // Verificar conexión a Google Sheets
+        async function probarConexion() {
+            const statusSpan = document.getElementById('statusSheet');
+            statusSpan.innerHTML = '🔄 Probando conexión...';
+            statusSpan.className = 'text-yellow-600';
+            
+            try {
+                const response = await fetch(`${SCRIPT_URL}?action=getData&t=${Date.now()}`);
+                const text = await response.text();
+                const data = JSON.parse(text);
+                
+                if (data.success) {
+                    statusSpan.innerHTML = '✅ Conectado a Google Sheets';
+                    statusSpan.className = 'text-green-600';
+                    cargarSocios();
+                } else {
+                    throw new Error('Error en respuesta');
+                }
+            } catch(error) {
+                statusSpan.innerHTML = '❌ Error de conexión - Verificar Apps Script';
+                statusSpan.className = 'text-red-600';
+                console.error('Error:', error);
+            }
         }
         
-        // ========== NOVEDADES ==========
+        // NOVEDADES
         let novedades = JSON.parse(localStorage.getItem('novedadesAdmin')) || [
             { id: 1, titulo: "📰 Bienvenidos", contenido: "Bienvenidos al nuevo sistema de socios", fecha: new Date().toISOString().split('T')[0] }
         ];
@@ -146,45 +167,22 @@
             container.innerHTML = html;
         }
         
-        function agregarNovedad() {
-            const titulo = prompt("Título de la novedad:");
-            if(!titulo) return;
-            const contenido = prompt("Contenido:");
-            if(!contenido) return;
-            const nuevaId = Math.max(...novedades.map(n=>n.id), 0) + 1;
-            novedades.push({ id: nuevaId, titulo, contenido, fecha: new Date().toISOString().split('T')[0] });
-            guardarNovedades();
-        }
-        
-        function editarNovedad(i) {
-            const n = novedades[i];
-            const nuevoTitulo = prompt("Editar título:", n.titulo);
-            if(nuevoTitulo) n.titulo = nuevoTitulo;
-            const nuevoContenido = prompt("Editar contenido:", n.contenido);
-            if(nuevoContenido) n.contenido = nuevoContenido;
-            guardarNovedades();
-        }
-        
-        function eliminarNovedad(i) { if(confirm("¿Eliminar esta novedad?")) { novedades.splice(i,1); guardarNovedades(); } }
+        function agregarNovedad() { const titulo = prompt("Título:"); if(!titulo) return; const contenido = prompt("Contenido:"); if(!contenido) return; const nuevaId = Math.max(...novedades.map(n=>n.id), 0) + 1; novedades.push({ id: nuevaId, titulo, contenido, fecha: new Date().toISOString().split('T')[0] }); guardarNovedades(); }
+        function editarNovedad(i) { const n = novedades[i]; const nuevoTitulo = prompt("Editar título:", n.titulo); if(nuevoTitulo) n.titulo = nuevoTitulo; const nuevoContenido = prompt("Editar contenido:", n.contenido); if(nuevoContenido) n.contenido = nuevoContenido; guardarNovedades(); }
+        function eliminarNovedad(i) { if(confirm("¿Eliminar?")) { novedades.splice(i,1); guardarNovedades(); } }
         function agregarEvento() { const titulo = prompt("Título:"); if(!titulo) return; const fecha = prompt("Fecha (YYYY-MM-DD):"); if(!fecha) return; const hora = prompt("Hora:"); const lugar = prompt("Lugar:"); const nuevaId = Math.max(...eventos.map(e=>e.id), 0) + 1; eventos.push({ id: nuevaId, titulo, fecha, hora, lugar }); guardarEventos(); }
         function editarEvento(i) { const e = eventos[i]; e.titulo = prompt("Título:", e.titulo) || e.titulo; e.fecha = prompt("Fecha:", e.fecha) || e.fecha; e.hora = prompt("Hora:", e.hora) || e.hora; e.lugar = prompt("Lugar:", e.lugar) || e.lugar; guardarEventos(); }
-        function eliminarEvento(i) { if(confirm("¿Eliminar este evento?")) { eventos.splice(i,1); guardarEventos(); } }
+        function eliminarEvento(i) { if(confirm("¿Eliminar?")) { eventos.splice(i,1); guardarEventos(); } }
         
-        // Registrar pago
         function registrarPago() {
             const socioId = document.getElementById('socioPago').value;
             const fechaPago = document.getElementById('fechaPago').value;
             const resultado = document.getElementById('resultadoPago');
-            
             if(!socioId || !fechaPago) { resultado.innerHTML = '<span class="text-red-600">❌ Seleccioná socio y fecha</span>'; setTimeout(()=>resultado.innerHTML='',3000); return; }
-            
             pagosSocios[socioId] = { ultimoPago: fechaPago, historial: [...(pagosSocios[socioId]?.historial || []), { fecha: fechaPago, monto: 10000 }] };
             guardarPagos();
-            
-            const proximo = calcularProximoPago(fechaPago);
-            resultado.innerHTML = `<span class="text-green-600">✅ Pago registrado para socio ${socioId}. Próximo pago: ${proximo}</span>`;
+            resultado.innerHTML = `<span class="text-green-600">✅ Pago registrado para socio ${socioId}</span>`;
             setTimeout(()=>resultado.innerHTML='',3000);
-            cargarSocios();
         }
         
         // CRUD Socios
@@ -193,12 +191,10 @@
                 const response = await fetch(`${SCRIPT_URL}?action=getData&t=${Date.now()}`);
                 const text = await response.text();
                 const data = JSON.parse(text);
-                if (data.success && data.data) { socios = data.data; }
-                else { throw new Error('No hay datos'); }
+                if (data.success && data.data && data.data.length > 0) { socios = data.data; }
+                else { throw new Error('Sin datos'); }
             } catch(error) {
-                socios = [
-                    { rowIndex: 2, id: 1001, nombre: "Juan Pérez", email: "juan@ejemplo.com", telefono: "2645123456", direccion: "Av. Libertador 123", estado: "Activo" }
-                ];
+                socios = [];
             }
             actualizarTablaSocios();
             actualizarSelectSocios();
@@ -220,11 +216,7 @@
                 if(s.estado === 'Activo') activos++;
                 else if(s.estado === 'Suspendido') suspendidos++;
                 else if(s.estado === 'Inactivo') inactivos++;
-                
-                const ultimoPago = pagosSocios[s.id]?.ultimoPago || 'Sin pagos';
-                const proximoPago = calcularProximoPago(ultimoPago);
-                
-                tbody.innerHTML += `<tr class="border-b"><td class="p-2">${s.id || i+1}<\/td><td class="p-2">${s.nombre}<\/td><td class="p-2">${s.email}<\/td><td class="p-2">${s.telefono || '-'}<\/td><td class="p-2">${s.direccion || '-'}<\/td><td class="p-2"><select onchange="cambiarEstado(${i}, this.value)" class="border rounded px-1 py-0.5 text-sm"><option ${s.estado==='Activo'?'selected':''}>Activo</option><option ${s.estado==='Suspendido'?'selected':''}>Suspendido</option><option ${s.estado==='Inactivo'?'selected':''}>Inactivo</option></select><\/td><td class="p-2">${ultimoPago}<\/td><td class="p-2">${proximoPago}<\/td><td class="p-2"><button onclick="eliminarSocio(${i})" class="text-red-600"><i class="fas fa-trash"></i></button><\/td><\/tr>`;
+                tbody.innerHTML += `<tr class="border-b"><td class="p-2">${s.id}<\/td><td class="p-2">${s.nombre}<\/td><td class="p-2">${s.email}<\/td><td class="p-2">${s.telefono || '-'}<\/td><td class="p-2">${s.direccion || '-'}<\/td><td class="p-2"><select onchange="cambiarEstado(${i}, this.value)" class="border rounded px-1 py-0.5 text-sm"><option ${s.estado==='Activo'?'selected':''}>Activo</option><option ${s.estado==='Suspendido'?'selected':''}>Suspendido</option><option ${s.estado==='Inactivo'?'selected':''}>Inactivo</option></select><\/td><td class="p-2"><button onclick="eliminarSocio(${i})" class="text-red-600"><i class="fas fa-trash"></i><\/button><\/td><\/tr>`;
             });
             document.getElementById('total').innerHTML = socios.length;
             document.getElementById('activos').innerHTML = activos;
@@ -249,7 +241,7 @@
         async function cambiarEstado(i, nuevoEstado) { const s = socios[i]; if(s.rowIndex) { await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: new URLSearchParams({ action: 'updateData', rowIndex: s.rowIndex, estado: nuevoEstado }) }); } cargarSocios(); }
         function cerrarSesion() { sessionStorage.removeItem('adminAuth'); window.location.href = 'login_admin.html'; }
         
-        cargarSocios();
+        probarConexion();
         actualizarListaNovedades();
         actualizarListaEventos();
     </script>
