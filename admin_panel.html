@@ -25,7 +25,7 @@
     </nav>
 
     <div class="max-w-7xl mx-auto p-6">
-        <!-- Estado de conexión -->
+        <!-- Estado -->
         <div class="bg-white rounded-lg shadow-lg p-4 mb-6">
             <p>⚽ Club Sportivo Iglesia - <span id="statusSheet" class="text-green-600">✅ Conectado a Google Sheets</span></p>
         </div>
@@ -38,25 +38,38 @@
             <div class="bg-white p-4 rounded shadow border-l-4 border-red-600"><div class="text-gray-500">Inactivos</div><div class="text-2xl font-bold text-red-600" id="inactivos">0</div></div>
         </div>
 
-        <!-- EDITOR DE NOVEDADES Y EVENTOS (NUEVO) -->
+        <!-- EDITOR DE NOVEDADES Y EVENTOS -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <!-- Editar Novedades -->
             <div class="bg-white rounded-lg shadow-lg p-6">
-                <h2 class="text-xl font-bold mb-4 text-purple-700"><i class="fas fa-newspaper"></i> Editar Novedades (Boletines)</h2>
+                <h2 class="text-xl font-bold mb-4 text-purple-700"><i class="fas fa-newspaper"></i> Editar Novedades</h2>
                 <div id="listaNovedadesAdmin"></div>
                 <button onclick="agregarNovedad()" class="mt-3 bg-purple-600 text-white px-4 py-2 rounded text-sm w-full">
                     <i class="fas fa-plus"></i> Agregar Novedad
                 </button>
             </div>
-
-            <!-- Editar Eventos -->
             <div class="bg-white rounded-lg shadow-lg p-6">
-                <h2 class="text-xl font-bold mb-4 text-green-700"><i class="fas fa-calendar-alt"></i> Editar Próximos Eventos</h2>
+                <h2 class="text-xl font-bold mb-4 text-green-700"><i class="fas fa-calendar-alt"></i> Editar Eventos</h2>
                 <div id="listaEventosAdmin"></div>
                 <button onclick="agregarEvento()" class="mt-3 bg-green-600 text-white px-4 py-2 rounded text-sm w-full">
                     <i class="fas fa-plus"></i> Agregar Evento
                 </button>
             </div>
+        </div>
+
+        <!-- GESTIÓN DE PAGOS (CADA 31 DÍAS) -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4 text-blue-700"><i class="fas fa-credit-card"></i> Gestión de Pagos (Cada 31 días)</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <select id="socioPago" class="border p-2 rounded">
+                    <option value="">Seleccionar Socio</option>
+                </select>
+                <input type="date" id="fechaPago" class="border p-2 rounded">
+                <button onclick="registrarPago()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                    <i class="fas fa-check-circle"></i> Registrar Pago
+                </button>
+            </div>
+            <div id="resultadoPago" class="text-sm mt-2"></div>
+            <p class="text-xs text-gray-500 mt-3">📌 Los pagos se registran automáticamente cada 31 días desde la última fecha de pago.</p>
         </div>
 
         <!-- Agregar Socio -->
@@ -77,8 +90,8 @@
             <div class="bg-blue-600 text-white p-4"><h2 class="font-bold"><i class="fas fa-list"></i> Lista de Socios</h2></div>
             <div class="overflow-x-auto">
                 <table class="w-full">
-                    <thead class="bg-gray-200"><tr><th class="p-3">ID</th><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Dirección</th><th>Estado</th><th>Acciones</th></tr></thead>
-                    <tbody id="listaSocios"><tr><td colspan="7" class="text-center p-4">Cargando...</td></tr></tbody>
+                    <thead class="bg-gray-200"><tr><th class="p-3">ID</th><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Dirección</th><th>Estado</th><th>Último Pago</th><th>Próximo Pago</th><th>Acciones</th></tr></thead>
+                    <tbody id="listaSocios"><tr><td colspan="9" class="text-center p-4">Cargando...</td></tr></tbody>
                 </table>
             </div>
         </div>
@@ -88,11 +101,22 @@
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbywqVvCGj6PMKsmqUItytEHSr_tC6nlLnSPMHlLIK1J-2hX2FuW2EpYXdAZgT8xP5JV/exec';
         let socios = [];
         
-        // ========== GESTIÓN DE NOVEDADES (LOCALSTORAGE) ==========
-        let novedades = JSON.parse(localStorage.getItem('novedadesAdmin')) || [
-            { id: 1, titulo: "📰 Boletín Bienvenida", contenido: "Bienvenidos al nuevo sistema de socios. ¡Estamos muy contentos de tenerlos!", fecha: "2024-03-01" }
-        ];
+        // Gestión de pagos en localStorage
+        let pagosSocios = JSON.parse(localStorage.getItem('pagosSocios')) || {};
         
+        function guardarPagos() { localStorage.setItem('pagosSocios', JSON.stringify(pagosSocios)); }
+        
+        function calcularProximoPago(ultimoPago) {
+            if (!ultimoPago) return 'Pendiente primer pago';
+            const fecha = new Date(ultimoPago);
+            fecha.setDate(fecha.getDate() + 31);
+            return fecha.toISOString().split('T')[0];
+        }
+        
+        // ========== NOVEDADES ==========
+        let novedades = JSON.parse(localStorage.getItem('novedadesAdmin')) || [
+            { id: 1, titulo: "📰 Bienvenidos", contenido: "Bienvenidos al nuevo sistema de socios", fecha: new Date().toISOString().split('T')[0] }
+        ];
         let eventos = JSON.parse(localStorage.getItem('eventosAdmin')) || [
             { id: 1, titulo: "Asamblea General", fecha: "2024-03-15", hora: "19:00", lugar: "Sede del Club" }
         ];
@@ -106,12 +130,7 @@
             if(novedades.length === 0) { container.innerHTML = '<p class="text-gray-500 text-sm">No hay novedades</p>'; return; }
             let html = '';
             novedades.forEach((n, i) => {
-                html += `<div class="border-b pb-2 mb-2">
-                    <p class="font-semibold text-sm">${n.titulo}</p>
-                    <p class="text-xs text-gray-600">${n.contenido.substring(0, 60)}...</p>
-                    <button onclick="editarNovedad(${i})" class="text-blue-600 text-xs mr-2">✏️ Editar</button>
-                    <button onclick="eliminarNovedad(${i})" class="text-red-600 text-xs">🗑️ Eliminar</button>
-                </div>`;
+                html += `<div class="border-b pb-2 mb-2"><p class="font-semibold text-sm">${n.titulo}</p><p class="text-xs text-gray-600">${n.contenido.substring(0, 60)}...</p><button onclick="editarNovedad(${i})" class="text-blue-600 text-xs mr-2">✏️ Editar</button><button onclick="eliminarNovedad(${i})" class="text-red-600 text-xs">🗑️ Eliminar</button></div>`;
             });
             container.innerHTML = html;
         }
@@ -122,12 +141,7 @@
             if(eventos.length === 0) { container.innerHTML = '<p class="text-gray-500 text-sm">No hay eventos</p>'; return; }
             let html = '';
             eventos.forEach((e, i) => {
-                html += `<div class="border-b pb-2 mb-2">
-                    <p class="font-semibold text-sm">📅 ${e.titulo}</p>
-                    <p class="text-xs text-gray-600">${e.fecha} - ${e.hora} | ${e.lugar}</p>
-                    <button onclick="editarEvento(${i})" class="text-blue-600 text-xs mr-2">✏️ Editar</button>
-                    <button onclick="eliminarEvento(${i})" class="text-red-600 text-xs">🗑️ Eliminar</button>
-                </div>`;
+                html += `<div class="border-b pb-2 mb-2"><p class="font-semibold text-sm">📅 ${e.titulo}</p><p class="text-xs text-gray-600">${e.fecha} - ${e.hora} | ${e.lugar}</p><button onclick="editarEvento(${i})" class="text-blue-600 text-xs mr-2">✏️ Editar</button><button onclick="eliminarEvento(${i})" class="text-red-600 text-xs">🗑️ Eliminar</button></div>`;
             });
             container.innerHTML = html;
         }
@@ -152,31 +166,28 @@
         }
         
         function eliminarNovedad(i) { if(confirm("¿Eliminar esta novedad?")) { novedades.splice(i,1); guardarNovedades(); } }
-        
-        function agregarEvento() {
-            const titulo = prompt("Título del evento:");
-            if(!titulo) return;
-            const fecha = prompt("Fecha (YYYY-MM-DD):");
-            if(!fecha) return;
-            const hora = prompt("Hora:");
-            const lugar = prompt("Lugar:");
-            const nuevaId = Math.max(...eventos.map(e=>e.id), 0) + 1;
-            eventos.push({ id: nuevaId, titulo, fecha, hora, lugar });
-            guardarEventos();
-        }
-        
-        function editarEvento(i) {
-            const e = eventos[i];
-            e.titulo = prompt("Título:", e.titulo) || e.titulo;
-            e.fecha = prompt("Fecha:", e.fecha) || e.fecha;
-            e.hora = prompt("Hora:", e.hora) || e.hora;
-            e.lugar = prompt("Lugar:", e.lugar) || e.lugar;
-            guardarEventos();
-        }
-        
+        function agregarEvento() { const titulo = prompt("Título:"); if(!titulo) return; const fecha = prompt("Fecha (YYYY-MM-DD):"); if(!fecha) return; const hora = prompt("Hora:"); const lugar = prompt("Lugar:"); const nuevaId = Math.max(...eventos.map(e=>e.id), 0) + 1; eventos.push({ id: nuevaId, titulo, fecha, hora, lugar }); guardarEventos(); }
+        function editarEvento(i) { const e = eventos[i]; e.titulo = prompt("Título:", e.titulo) || e.titulo; e.fecha = prompt("Fecha:", e.fecha) || e.fecha; e.hora = prompt("Hora:", e.hora) || e.hora; e.lugar = prompt("Lugar:", e.lugar) || e.lugar; guardarEventos(); }
         function eliminarEvento(i) { if(confirm("¿Eliminar este evento?")) { eventos.splice(i,1); guardarEventos(); } }
         
-        // ========== CRUD DE SOCIOS ==========
+        // Registrar pago
+        function registrarPago() {
+            const socioId = document.getElementById('socioPago').value;
+            const fechaPago = document.getElementById('fechaPago').value;
+            const resultado = document.getElementById('resultadoPago');
+            
+            if(!socioId || !fechaPago) { resultado.innerHTML = '<span class="text-red-600">❌ Seleccioná socio y fecha</span>'; setTimeout(()=>resultado.innerHTML='',3000); return; }
+            
+            pagosSocios[socioId] = { ultimoPago: fechaPago, historial: [...(pagosSocios[socioId]?.historial || []), { fecha: fechaPago, monto: 10000 }] };
+            guardarPagos();
+            
+            const proximo = calcularProximoPago(fechaPago);
+            resultado.innerHTML = `<span class="text-green-600">✅ Pago registrado para socio ${socioId}. Próximo pago: ${proximo}</span>`;
+            setTimeout(()=>resultado.innerHTML='',3000);
+            cargarSocios();
+        }
+        
+        // CRUD Socios
         async function cargarSocios() {
             try {
                 const response = await fetch(`${SCRIPT_URL}?action=getData&t=${Date.now()}`);
@@ -190,6 +201,14 @@
                 ];
             }
             actualizarTablaSocios();
+            actualizarSelectSocios();
+        }
+        
+        function actualizarSelectSocios() {
+            const select = document.getElementById('socioPago');
+            if(!select) return;
+            select.innerHTML = '<option value="">Seleccionar Socio</option>';
+            socios.forEach(s => { select.innerHTML += `<option value="${s.id}">${s.id} - ${s.nombre}</option>`; });
         }
         
         function actualizarTablaSocios() {
@@ -201,7 +220,11 @@
                 if(s.estado === 'Activo') activos++;
                 else if(s.estado === 'Suspendido') suspendidos++;
                 else if(s.estado === 'Inactivo') inactivos++;
-                tbody.innerHTML += `<tr class="border-b"><td class="p-2">${s.id || i+1}</td><td class="p-2">${s.nombre}</td><td class="p-2">${s.email}</td><td class="p-2">${s.telefono || '-'}</td><td class="p-2">${s.direccion || '-'}</td><td class="p-2"><select onchange="cambiarEstado(${i}, this.value)" class="border rounded px-1 py-0.5 text-sm"><option ${s.estado==='Activo'?'selected':''}>Activo</option><option ${s.estado==='Suspendido'?'selected':''}>Suspendido</option><option ${s.estado==='Inactivo'?'selected':''}>Inactivo</option></select></td><td class="p-2"><button onclick="eliminarSocio(${i})" class="text-red-600"><i class="fas fa-trash"></i></button></td></tr>`;
+                
+                const ultimoPago = pagosSocios[s.id]?.ultimoPago || 'Sin pagos';
+                const proximoPago = calcularProximoPago(ultimoPago);
+                
+                tbody.innerHTML += `<tr class="border-b"><td class="p-2">${s.id || i+1}<\/td><td class="p-2">${s.nombre}<\/td><td class="p-2">${s.email}<\/td><td class="p-2">${s.telefono || '-'}<\/td><td class="p-2">${s.direccion || '-'}<\/td><td class="p-2"><select onchange="cambiarEstado(${i}, this.value)" class="border rounded px-1 py-0.5 text-sm"><option ${s.estado==='Activo'?'selected':''}>Activo</option><option ${s.estado==='Suspendido'?'selected':''}>Suspendido</option><option ${s.estado==='Inactivo'?'selected':''}>Inactivo</option></select><\/td><td class="p-2">${ultimoPago}<\/td><td class="p-2">${proximoPago}<\/td><td class="p-2"><button onclick="eliminarSocio(${i})" class="text-red-600"><i class="fas fa-trash"></i></button><\/td><\/tr>`;
             });
             document.getElementById('total').innerHTML = socios.length;
             document.getElementById('activos').innerHTML = activos;
